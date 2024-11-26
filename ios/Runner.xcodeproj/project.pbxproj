@@ -355,6 +355,20 @@
 				SWIFT_INSTALL_OBJC_HEADER = NO;
 				BUILD_LIBRARY_FOR_DISTRIBUTION = NO;
 				SWIFT_EMIT_MODULE_INTERFACE = NO;
+				SYSTEM_MEMORY_MANAGEMENT = YES;
+				SWIFT_MEMORY_MANAGEMENT = automatic;
+				WEBVIEW_MEMORY_LIMIT = 512; // MB
+				GCC_OPTIMIZATION_LEVEL = s;
+				SYSTEM_FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SDKROOT)/System/Library/Frameworks",
+				);
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				ENABLE_BITCODE = NO;
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 			};
 			name = Profile;
 		};
@@ -379,6 +393,15 @@
 				SWIFT_INSTALL_OBJC_HEADER = NO;
 				BUILD_LIBRARY_FOR_DISTRIBUTION = NO;
 				SWIFT_EMIT_MODULE_INTERFACE = NO;
+				SYSTEM_MEMORY_MANAGEMENT = YES;
+				SWIFT_MEMORY_MANAGEMENT = automatic;
+				WEBVIEW_MEMORY_LIMIT = 512; // MB
+				GCC_OPTIMIZATION_LEVEL = s;
+				SYSTEM_FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SDKROOT)/System/Library/Frameworks",
+				);
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 			};
 			name = Profile;
 		};
@@ -429,6 +452,20 @@
 				SWIFT_INSTALL_OBJC_HEADER = NO;
 				BUILD_LIBRARY_FOR_DISTRIBUTION = NO;
 				SWIFT_EMIT_MODULE_INTERFACE = NO;
+				SYSTEM_MEMORY_MANAGEMENT = YES;
+				SWIFT_MEMORY_MANAGEMENT = automatic;
+				WEBVIEW_MEMORY_LIMIT = 512; // MB
+				GCC_OPTIMIZATION_LEVEL = s;
+				SYSTEM_FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SDKROOT)/System/Library/Frameworks",
+				);
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				ENABLE_BITCODE = NO;
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 			};
 			name = Profile;
 		};
@@ -589,6 +626,15 @@
 				SWIFT_INSTALL_OBJC_HEADER = NO;
 				BUILD_LIBRARY_FOR_DISTRIBUTION = NO;
 				SWIFT_EMIT_MODULE_INTERFACE = NO;
+				SYSTEM_MEMORY_MANAGEMENT = YES;
+				SWIFT_MEMORY_MANAGEMENT = automatic;
+				WEBVIEW_MEMORY_LIMIT = 512; // MB
+				GCC_OPTIMIZATION_LEVEL = s;
+				SYSTEM_FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SDKROOT)/System/Library/Frameworks",
+				);
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 			};
 			name = Release;
 		};

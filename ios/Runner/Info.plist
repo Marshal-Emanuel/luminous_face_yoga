@@ -53,11 +53,34 @@
 		<true/>
 		<key>NSAllowsArbitraryLoadsInWebContent</key>
 		<true/>
+		<key>NSTemporaryExceptionMinimumTLSVersion</key>
+		<string>TLSv1.2</string>
 	</dict>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>UIFileSharingEnabled</key>
+	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
 		<string>remote-notification</string>
 	</array>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+	    <key>UIApplicationSupportsMultipleScenes</key>
+	    <false/>
+	    <key>UISceneConfigurations</key>
+	    <dict>
+	        <key>UIWindowSceneSessionRoleApplication</key>
+	        <array>
+	            <dict>
+	                <key>UISceneConfigurationName</key>
+	                <string>Default Configuration</string>
+	                <key>UISceneDelegateClassName</key>
+	                <string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+	            </dict>
+	        </array>
+	    </dict>
+	</dict>
 </dict>
 </plist>
