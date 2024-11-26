@@ -12,7 +12,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-Future<void> main() async {
+void main() {
+  // Show UI immediately
+  runApp(MaterialApp(
+    home: LoadingScreen(),
+    debugShowCheckedModeBanner: false,
+  ));
+
+  // Initialize in background
+  initializeApp();
+}
+
+Future<void> initializeApp() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
     print('Flutter binding initialized');
@@ -20,7 +31,6 @@ Future<void> main() async {
     if (Platform.isIOS) {
       print('Running on iOS - configuring webview');
       await InAppWebViewController.setWebContentsDebuggingEnabled(true);
-      // iOS specific configurations
       await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     }
     
@@ -28,51 +38,24 @@ Future<void> main() async {
     tz.initializeTimeZones();
     tz.setLocalLocation(tz.getLocation('America/Detroit'));
 
-    // Initialize Shared Preferences with error handling
-    SharedPreferences prefs;
-    try {
-      prefs = await SharedPreferences.getInstance();
-      print('Shared Preferences initialized successfully.');
-    } catch (e) {
-      print('Error initializing Shared Preferences: $e');
-      // Handle initialization failure if necessary
-      return;
-    }
+    // Initialize Shared Preferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    print('Shared Preferences initialized successfully.');
 
-    // Load settings from Shared Preferences
-    try {
-      print('Loading settings from Shared Preferences...');
-      await NotificationSettings.loadSettings(prefs);
-    } catch (e) {
-      print('Error loading settings: $e');
-    }
+    // Initialize other services
+    await Future.wait([
+      NotificationSettings.loadSettings(prefs),
+      NotificationService.initNotifications(),
+      ProgressService.updateStreakOnAppLaunch(),
+      NotificationService.scheduleEveningTip(),
+      ProgressService.scheduleMidnightCheck(),
+    ]);
 
-    // Initialize notifications
-    try {
-      print('Initializing notifications...');
-      await NotificationService.initNotifications();
-    } catch (e) {
-      print('Error initializing notifications: $e');
-    }
-
-    // Additional services
-    try {
-      print('Updating streak on app launch...');
-      await ProgressService.updateStreakOnAppLaunch();
-
-      print('Scheduling evening tip...');
-      await NotificationService.scheduleEveningTip();
-
-      print('Scheduling midnight check...');
-      await ProgressService.scheduleMidnightCheck();
-    } catch (e) {
-      print('Error during service initialization: $e');
-    }
-
-    print('Starting app...');
+    // Replace loading screen with main app
     runApp(MyApp(prefs: prefs));
+    
   } catch (e, stackTrace) {
-    print('Error in main: $e');
+    print('Error in initialization: $e');
     print('Stack trace: $stackTrace');
   }
 }
