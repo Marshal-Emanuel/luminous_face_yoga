@@ -20,6 +20,9 @@ Future<void> main() async {
     if (Platform.isIOS) {
       print('Running on iOS - configuring webview');
       await InAppWebViewController.setWebContentsDebuggingEnabled(true);
+      // Add memory management
+      await SystemChannels.platform.invokeMethod('SystemNavigator.preventPop');
+      await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     }
     
     // Initialize timezones

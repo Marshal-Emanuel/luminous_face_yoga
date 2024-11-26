@@ -82,5 +82,13 @@
 	        </array>
 	    </dict>
 	</dict>
+	<key>NSProcessInfoPowerStateDidChangeNotification</key>
+	<true/>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
+	<key>UIApplicationExitsOnSuspend</key>
+	<false/>
+	<key>UIRequiresFullScreen</key>
+	<true/>
 </dict>
 </plist>
