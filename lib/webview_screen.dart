@@ -458,9 +458,8 @@ class _WebviewScreenState extends State<WebviewScreen> {
 
   Future<bool> _handleBackNavigation(BuildContext context) async {
     if (webViewController != null) {
-      bool canGoBack = await webViewController!.canGoBack();
-      if (canGoBack) {
-        webViewController!.goBack();
+      if (await webViewController!.canGoBack()) {
+        await webViewController!.goBack();
         return false;
       }
     }
@@ -514,15 +513,10 @@ class _WebviewScreenState extends State<WebviewScreen> {
               initialOptions: InAppWebViewGroupOptions(
                 crossPlatform: InAppWebViewOptions(
                   javaScriptEnabled: true,
-                  useShouldOverrideUrlLoading: false,
-                  mediaPlaybackRequiresUserGesture: false,
                 ),
-                // Add iOS specific options
                 ios: IOSInAppWebViewOptions(
-                  allowsBackForwardNavigationGestures: true, // Enable swipe gesture
-                  enableViewportScale: true,
-                  allowsLinkPreview: true,
-                ),
+                  allowsBackForwardNavigationGestures: true, // Enable iOS swipe navigation
+                )
               ),
               pullToRefreshController: _refreshController,
               initialUserScripts: UnmodifiableListView<UserScript>([
