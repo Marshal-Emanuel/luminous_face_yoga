@@ -17,7 +17,7 @@ import 'package:luminous_face_yoga/webview_screen.dart';
       _controllers = List.generate(
         numberOfDots,
         (index) => AnimationController(
-          duration: Duration(milliseconds: 600),
+          duration: Duration(milliseconds: 300),
           vsync: this,
         )..repeat(reverse: true),
       );
@@ -28,8 +28,8 @@ import 'package:luminous_face_yoga/webview_screen.dart';
         });
       }
 
-      // Navigate to main screen after 4 seconds
-      Future.delayed(Duration(seconds: 4), () {
+      // Navigate to main screen after 2 second
+      Future.delayed(Duration(seconds: 2), () {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => WebviewScreen()),

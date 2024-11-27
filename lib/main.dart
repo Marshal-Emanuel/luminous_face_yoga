@@ -27,13 +27,13 @@ Future<void> initializeApp() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
     print('Flutter binding initialized');
-    
+
     if (Platform.isIOS) {
       print('Running on iOS - configuring webview');
       await InAppWebViewController.setWebContentsDebuggingEnabled(true);
       await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     }
-    
+
     // Initialize timezones
     tz.initializeTimeZones();
     tz.setLocalLocation(tz.getLocation('America/Detroit'));
@@ -53,7 +53,6 @@ Future<void> initializeApp() async {
 
     // Replace loading screen with main app
     runApp(MyApp(prefs: prefs));
-    
   } catch (e, stackTrace) {
     print('Error in initialization: $e');
     print('Stack trace: $stackTrace');
@@ -63,18 +62,22 @@ Future<void> initializeApp() async {
 class MyApp extends StatelessWidget {
   final SharedPreferences prefs;
 
-  const MyApp({Key? key, required this.prefs}) : super(key: key);
+  MyApp({Key? key, required this.prefs}) : super(key: key);
+
+  // Added navigator key
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {
     print('Building MyApp...');
     return MaterialApp(
+      navigatorKey: navigatorKey, // Set the navigator key
       home: SafeArea(child: LoadingScreen()),
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
         useMaterial3: true,
-        appBarTheme: AppBarTheme(
+        appBarTheme: const AppBarTheme(
           systemOverlayStyle: SystemUiOverlayStyle.light,
         ),
       ),

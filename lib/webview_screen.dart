@@ -128,7 +128,7 @@ class ProgramTracker {
 }
 
 class WebviewScreen extends StatefulWidget {
-  const WebviewScreen({super.key});
+  const WebviewScreen({Key? key}) : super(key: key);
 
   @override
   State<WebviewScreen> createState() => _WebviewScreenState();
@@ -348,7 +348,7 @@ class _WebviewScreenState extends State<WebviewScreen> {
         isLoading = true;
       });
 
-      _loadingTimer = Timer(const Duration(seconds: 3), () {
+      _loadingTimer = Timer(const Duration(seconds: 2), () {
         if (!_isDisposed && mounted) {
           setState(() {
             isLoading = false;
@@ -380,7 +380,7 @@ class _WebviewScreenState extends State<WebviewScreen> {
   Future<void> checkForQuizCompletion(String url) async {
     if (!url.contains('quiz/?show=results#gf_2')) return;
 
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 250));
 
     final String pageContent =
         await webViewController?.evaluateJavascript(source: """
@@ -469,98 +469,106 @@ class _WebviewScreenState extends State<WebviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(0),
-          child: AppBar(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            systemOverlayStyle: SystemUiOverlayStyle.light,
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(0),
+        child: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          systemOverlayStyle: SystemUiOverlayStyle.light,
+        ),
+      ),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: FloatingActionButton(
+              heroTag: 'progress_button',
+              onPressed: () {
+                Navigator.of(context).pushNamed('/progress');
+              },
+              backgroundColor: const Color(0xFF66D7D1),
+              child: const Icon(Icons.insights, color: Colors.white),
+            ),
           ),
-        ),
-        floatingActionButton: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
+          FloatingActionButton(
+            heroTag: 'notification_button',
+            onPressed: () {
+              Navigator.of(context).pushNamed('/settings');
+            },
+            backgroundColor: const Color(0xFFE99C83),
+            child: const Icon(Icons.notifications_outlined, color: Colors.white),
+          ),
+        ],
+      ),
+      body: WillPopScope(
+        onWillPop: () => _handleBackNavigation(context),
+        child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: FloatingActionButton(
-                heroTag: 'progress_button',
-                onPressed: () => Navigator.pushNamed(context, '/progress'),
-                backgroundColor: const Color(0xFF66D7D1),
-                child: const Icon(Icons.insights, color: Colors.white),
+            InAppWebView(
+              initialUrlRequest: URLRequest(
+                url: WebUri(initialUrl),
               ),
-            ),
-            FloatingActionButton(
-              heroTag: 'notification_button',
-              onPressed: () => Navigator.pushNamed(context, '/settings'),
-              backgroundColor: const Color(0xFFE99C83),
-              child: const Icon(Icons.notifications_outlined, color: Colors.white),
-            ),
-          ],
-        ),
-        body: WillPopScope(
-          onWillPop: () => _handleBackNavigation(context),
-          child: Stack(
-            children: [
-              InAppWebView(
-                initialUrlRequest: URLRequest(
-                  url: WebUri(initialUrl),
+              initialOptions: InAppWebViewGroupOptions(
+                crossPlatform: InAppWebViewOptions(
+                  javaScriptEnabled: true,
+                  useShouldOverrideUrlLoading: false,
+                  mediaPlaybackRequiresUserGesture: false,
                 ),
-                initialOptions: InAppWebViewGroupOptions(
-                  crossPlatform: InAppWebViewOptions(
-                    javaScriptEnabled: true,
-                    useShouldOverrideUrlLoading: false,
-                    mediaPlaybackRequiresUserGesture: false,
-                  ),
+                // Add iOS specific options
+                ios: IOSInAppWebViewOptions(
+                  allowsBackForwardNavigationGestures: true, // Enable swipe gesture
+                  enableViewportScale: true,
+                  allowsLinkPreview: true,
                 ),
-                pullToRefreshController: _refreshController,
-                initialUserScripts: UnmodifiableListView<UserScript>([
-                  footerHidingScript,
-                  headerHidingScript,
-                ]),
-                onWebViewCreated: (controller) {
-                  if (!_isDisposed) {
-                    webViewController = controller;
-                    programTracker = ProgramTracker(controller);
-                    _setupJavaScriptHandlers(controller);
-                  }
-                },
-                onLoadStart: (controller, url) {
-                  if (!_isDisposed) {
-                    startLoadingTimer();
-                  }
-                },
-                onLoadStop: (controller, url) async {
-                  if (_isDisposed) return;
-                  
+              ),
+              pullToRefreshController: _refreshController,
+              initialUserScripts: UnmodifiableListView<UserScript>([
+                footerHidingScript,
+                headerHidingScript,
+              ]),
+              onWebViewCreated: (controller) {
+                if (!_isDisposed) {
+                  webViewController = controller;
+                  programTracker = ProgramTracker(controller);
+                  _setupJavaScriptHandlers(controller);
+                }
+              },
+              onLoadStart: (controller, url) {
+                if (!_isDisposed) {
+                  startLoadingTimer();
+                }
+              },
+              onLoadStop: (controller, url) async {
+                if (_isDisposed) return;
+                
+                _endRefreshing();
+                if (mounted) {
+                  setState(() {
+                    isLoading = false;
+                  });
+                }
+
+                final currentUrl = url.toString();
+                await _handlePageLoad(currentUrl);
+              },
+              onProgressChanged: (controller, progress) {
+                if (_isDisposed) return;
+                
+                if (progress == 100) {
                   _endRefreshing();
                   if (mounted) {
                     setState(() {
                       isLoading = false;
                     });
                   }
-
-                  final currentUrl = url.toString();
-                  await _handlePageLoad(currentUrl);
-                },
-                onProgressChanged: (controller, progress) {
-                  if (_isDisposed) return;
-                  
-                  if (progress == 100) {
-                    _endRefreshing();
-                    if (mounted) {
-                      setState(() {
-                        isLoading = false;
-                      });
-                    }
-                  }
-                },
-              ),
-              if (isLoading) LoadingOverlay(),
-            ],
-          ),
+                }
+              },
+            ),
+            if (isLoading) LoadingOverlay(),
+          ],
         ),
       ),
     );

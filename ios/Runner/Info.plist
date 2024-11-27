@@ -46,7 +46,7 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSUserNotificationsUsageDescription</key>
-	<string>We need to send you notifications for daily face yoga reminders and tips</string>
+	<string>We need permission to send you reminders and tips to help maintain your face yoga practice.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
@@ -80,6 +80,18 @@
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 	    <string>com.luminous.faceyoga.processing</string>
+	</array>
+	<key>UIRequiresPersistentWiFi</key>
+	<true/>
+	<key>aps-environment</key>
+	<string>development</string>
+	<key>UNUserNotificationCenterEnabled</key>
+	<true/>
+	<key>UNAuthorizationOptions</key>
+	<array>
+	    <string>alert</string>
+	    <string>badge</string>
+	    <string>sound</string>
 	</array>
 </dict>
 </plist>
