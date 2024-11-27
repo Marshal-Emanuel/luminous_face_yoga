@@ -1,14 +1,18 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:luminous_face_yoga/screens/notification_settings.dart';
+import 'package:luminous_face_yoga/screens/progress_screen.dart';
 import 'package:luminous_face_yoga/services/progress_service.dart';
 import 'package:luminous_face_yoga/services/notification_service.dart';
 import 'package:luminous_face_yoga/widgets/loading_overlay.dart';
 import 'package:luminous_face_yoga/widgets/achievement_unlocked_dialog.dart';
 import 'package:luminous_face_yoga/models/achievement_data.dart';
+import 'package:flutter/cupertino.dart';
 
 class ProgramTracker {
   final InAppWebViewController controller;
@@ -485,36 +489,18 @@ class _WebviewScreenState extends State<WebviewScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: GestureDetector( // Wrap with GestureDetector for better touch handling
-                onTap: () {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    Navigator.of(context).pushNamed('/progress');
-                  });
-                },
-                child: FloatingActionButton(
-                  heroTag: 'progress_button',
-                  onPressed: () {
-                    Navigator.of(context).pushNamed('/progress');
-                  },
-                  backgroundColor: const Color(0xFF66D7D1),
-                  child: const Icon(Icons.insights, color: Colors.white),
-                ),
+              child: FloatingActionButton(
+                heroTag: 'progress_button',
+                onPressed: () => _handleNavigation('/progress'),
+                backgroundColor: const Color(0xFF66D7D1),
+                child: const Icon(Icons.insights, color: Colors.white),
               ),
             ),
-            GestureDetector( // Wrap with GestureDetector for better touch handling
-              onTap: () {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  Navigator.of(context).pushNamed('/settings');
-                });
-              },
-              child: FloatingActionButton(
-                heroTag: 'notification_button',
-                onPressed: () {
-                  Navigator.of(context).pushNamed('/settings');
-                },
-                backgroundColor: const Color(0xFFE99C83),
-                child: const Icon(Icons.notifications_outlined, color: Colors.white),
-              ),
+            FloatingActionButton(
+              heroTag: 'notification_button',
+              onPressed: () => _handleNavigation('/settings'),
+              backgroundColor: const Color(0xFFE99C83),
+              child: const Icon(Icons.notifications_outlined, color: Colors.white),
             ),
           ],
         ),
@@ -634,5 +620,28 @@ class _WebviewScreenState extends State<WebviewScreen> {
       }
     }
     return true;
+  }
+
+  void _handleNavigation(String route) {
+    if (!mounted) return;
+    
+    if (Platform.isIOS) {
+      Navigator.of(context).push(
+        CupertinoPageRoute(
+          builder: (context) {
+            switch (route) {
+              case '/progress':
+                return const ProgressScreen();
+              case '/settings':
+                return NotificationSettings();
+              default:
+                return const SizedBox.shrink();
+            }
+          },
+        ),
+      );
+    } else {
+      Navigator.of(context).pushNamed(route);
+    }
   }
 }
