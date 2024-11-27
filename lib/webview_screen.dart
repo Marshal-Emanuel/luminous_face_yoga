@@ -478,29 +478,46 @@ class _WebviewScreenState extends State<WebviewScreen> {
           systemOverlayStyle: SystemUiOverlayStyle.light,
         ),
       ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: FloatingActionButton(
-              heroTag: 'progress_button',
-              onPressed: () {
-                Navigator.of(context).pushNamed('/progress');
-              },
-              backgroundColor: const Color(0xFF66D7D1),
-              child: const Icon(Icons.insights, color: Colors.white),
+      floatingActionButton: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: GestureDetector( // Wrap with GestureDetector for better touch handling
+                onTap: () {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    Navigator.of(context).pushNamed('/progress');
+                  });
+                },
+                child: FloatingActionButton(
+                  heroTag: 'progress_button',
+                  onPressed: () {
+                    Navigator.of(context).pushNamed('/progress');
+                  },
+                  backgroundColor: const Color(0xFF66D7D1),
+                  child: const Icon(Icons.insights, color: Colors.white),
+                ),
+              ),
             ),
-          ),
-          FloatingActionButton(
-            heroTag: 'notification_button',
-            onPressed: () {
-              Navigator.of(context).pushNamed('/settings');
-            },
-            backgroundColor: const Color(0xFFE99C83),
-            child: const Icon(Icons.notifications_outlined, color: Colors.white),
-          ),
-        ],
+            GestureDetector( // Wrap with GestureDetector for better touch handling
+              onTap: () {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  Navigator.of(context).pushNamed('/settings');
+                });
+              },
+              child: FloatingActionButton(
+                heroTag: 'notification_button',
+                onPressed: () {
+                  Navigator.of(context).pushNamed('/settings');
+                },
+                backgroundColor: const Color(0xFFE99C83),
+                child: const Icon(Icons.notifications_outlined, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
       ),
       body: WillPopScope(
         onWillPop: () => _handleBackNavigation(context),
