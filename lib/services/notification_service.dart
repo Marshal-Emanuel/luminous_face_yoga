@@ -1,6 +1,7 @@
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'dart:io';
 
 class NotificationService {
   static final List<String> eveningTips = [
@@ -26,12 +27,12 @@ class NotificationService {
     "Practice face yoga for stress relief"
   ];
 
-  static final FlutterLocalNotificationsPlugin
-      _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  static FlutterLocalNotificationsPlugin? _flutterLocalNotificationsPlugin;
 
   static Future<void> initNotifications() async {
+    // Single initialization for both platforms
     await AwesomeNotifications().initialize(
-      'resource://drawable/res_app_icon',
+      null, // null icon for iOS
       [
         NotificationChannel(
           channelKey: 'basic_channel',
@@ -39,57 +40,38 @@ class NotificationService {
           channelDescription: 'Notification channel for basic tests',
           defaultColor: Color.fromARGB(200, 221, 181, 80),
           ledColor: Colors.white,
-        ),
-      ],
-    );
-
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    final InitializationSettings initializationSettings =
-        InitializationSettings(
-      android: initializationSettingsAndroid,
-    );
-
-    await _flutterLocalNotificationsPlugin.initialize(initializationSettings);
-
-    await AwesomeNotifications().initialize(
-      null,
-      [
-        NotificationChannel(
-          channelKey: 'practice_reminders',
-          channelName: 'Practice Reminders',
-          channelDescription: 'Daily face yoga practice reminders',
-          defaultColor: Color(0xFFE99C83),
-          ledColor: Color(0xFF465A72),
           importance: NotificationImportance.High,
+          playSound: true,
+          enableVibration: true,
+          soundSource: 'resource://raw/notification', // iOS sound
         ),
         NotificationChannel(
-          channelKey: 'achievements',
-          channelName: 'Achievements',
-          channelDescription: 'Milestone and progress notifications',
+          channelKey: 'scheduled_channel',
+          channelName: 'Scheduled notifications',
+          channelDescription: 'Scheduled notifications channel',
           defaultColor: Color(0xFF66D7D1),
           ledColor: Color(0xFF465A72),
           importance: NotificationImportance.High,
-        ),
-        NotificationChannel(
-          channelKey: 'engagement',
-          channelName: 'Tips & Updates',
-          channelDescription: 'Motivation and new content notifications',
-          defaultColor: Color(0xFF748395),
-          ledColor: Color(0xFF465A72),
-          importance: NotificationImportance.High,
+          playSound: true,
+          enableVibration: true,
         ),
       ],
     );
 
-    await AwesomeNotifications()
-        .isNotificationAllowed()
-        .then((isAllowed) async {
-      if (!isAllowed) {
-        await AwesomeNotifications().requestPermissionToSendNotifications();
-      }
-    });
+    // Request permissions - handle iOS specifically
+    if (Platform.isIOS) {
+      await AwesomeNotifications().requestPermissionToSendNotifications(
+        permissions: [
+          NotificationPermission.Alert,
+          NotificationPermission.Sound,
+          NotificationPermission.Badge,
+          NotificationPermission.Provisional, // For iOS provisional permissions
+        ],
+      );
+    }
+
+    // Remove FlutterLocalNotificationsPlugin initialization
+    _flutterLocalNotificationsPlugin = null;
   }
 
   static Future<void> scheduleDailyReminder({
@@ -164,7 +146,7 @@ class NotificationService {
         channelKey: 'achievements',
         title: '🎉 Achievement Unlocked!',
         body:
-            'Congratulations! Your personalized Face Yoga assessment is ready. Check your inbox for your bespoke report!',
+            'Congratulations! Your  Face Yoga assessment is ready. Check your inbox for your bespoke report!',
         notificationLayout: NotificationLayout.Default,
         displayOnForeground: true,
         displayOnBackground: true,
@@ -211,7 +193,7 @@ class NotificationService {
     const NotificationDetails platformChannelSpecifics =
         NotificationDetails(android: androidPlatformChannelSpecifics);
 
-    await _flutterLocalNotificationsPlugin.show(
+    await _flutterLocalNotificationsPlugin?.show(
       0,
       'Missed Streak',
       'You missed a day! Your current streak is now $currentStreak days. Log in to keep your streak going!',
