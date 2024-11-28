@@ -80,6 +80,7 @@
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 	    <string>com.luminous.faceyoga.processing</string>
+	    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	</array>
 	<key>UIRequiresPersistentWiFi</key>
 	<true/>

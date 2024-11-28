@@ -1,6 +1,6 @@
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
 import 'dart:io';
 
 class NotificationService {
@@ -27,12 +27,13 @@ class NotificationService {
     "Practice face yoga for stress relief"
   ];
 
-  static FlutterLocalNotificationsPlugin? _flutterLocalNotificationsPlugin;
+  
 
   static Future<void> initNotifications() async {
-    // Single initialization for both platforms
     await AwesomeNotifications().initialize(
-      null, // null icon for iOS
+      Platform.isIOS 
+        ? 'AppIcon.appiconset/Icon-App-20x20@1x' // iOS path
+        : 'resource://mipmap/notification_icon', // Android path using mipmap
       [
         NotificationChannel(
           channelKey: 'basic_channel',
@@ -43,35 +44,42 @@ class NotificationService {
           importance: NotificationImportance.High,
           playSound: true,
           enableVibration: true,
-          soundSource: 'resource://raw/notification', // iOS sound
+          soundSource: Platform.isIOS ? 'resource://raw/res_notification' : 'resource://raw/notification',
+          criticalAlerts: true,
         ),
         NotificationChannel(
           channelKey: 'scheduled_channel',
-          channelName: 'Scheduled notifications',
+          channelName: 'Scheduled notifications', 
           channelDescription: 'Scheduled notifications channel',
           defaultColor: Color(0xFF66D7D1),
           ledColor: Color(0xFF465A72),
           importance: NotificationImportance.High,
           playSound: true,
           enableVibration: true,
+          criticalAlerts: true,
+          onlyAlertOnce: false,
         ),
       ],
     );
 
-    // Request permissions - handle iOS specifically
-    if (Platform.isIOS) {
+    // Request iOS permissions
+    if(Platform.isIOS) {
       await AwesomeNotifications().requestPermissionToSendNotifications(
+        channelKey: 'basic_channel',
         permissions: [
           NotificationPermission.Alert,
           NotificationPermission.Sound,
           NotificationPermission.Badge,
-          NotificationPermission.Provisional, // For iOS provisional permissions
-        ],
+          NotificationPermission.Provisional,
+          NotificationPermission.Vibration,
+          NotificationPermission.Light,
+          NotificationPermission.CriticalAlert,
+        ]
       );
     }
 
     // Remove FlutterLocalNotificationsPlugin initialization
-    _flutterLocalNotificationsPlugin = null;
+    
   }
 
   static Future<void> scheduleDailyReminder({
@@ -180,25 +188,15 @@ class NotificationService {
   }
 
   static Future<void> sendMissedStreakNotification(int currentStreak) async {
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-      'missed_streak_channel',
-      'Missed Streak',
-      channelDescription: 'Channel for missed streak notifications',
-      importance: Importance.max,
-      priority: Priority.high,
-      showWhen: false,
-    );
-
-    const NotificationDetails platformChannelSpecifics =
-        NotificationDetails(android: androidPlatformChannelSpecifics);
-
-    await _flutterLocalNotificationsPlugin?.show(
-      0,
-      'Missed Streak',
-      'You missed a day! Your current streak is now $currentStreak days. Log in to keep your streak going!',
-      platformChannelSpecifics,
-      payload: 'missed_streak',
+    await AwesomeNotifications().createNotification(
+      content: NotificationContent(
+        id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        channelKey: 'basic_channel',
+        title: 'Missed Streak',
+        body: 'You missed a day! Your current streak is now $currentStreak days. Log in to keep your streak going!',
+        notificationLayout: NotificationLayout.Default,
+        category: NotificationCategory.Reminder,
+      ),
     );
   }
 }
