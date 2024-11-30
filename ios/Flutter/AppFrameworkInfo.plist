@@ -22,5 +22,11 @@
   <string>1.0</string>
   <key>MinimumOSVersion</key>
   <string>12.0</string>
+    <key>UIBackgroundModes</key>
+  <array>
+    <string>remote-notification</string>
+  </array>
+  <key>aps-environment</key>
+  <string>development</string>
 </dict>
 </plist>
