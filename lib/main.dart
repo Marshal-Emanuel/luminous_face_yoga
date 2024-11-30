@@ -24,32 +24,30 @@ void main() {
 }
 
 Future<void> initializeApp() async {
-  try {
-    WidgetsFlutterBinding.ensureInitialized();
-    print('Flutter binding initialized');
+      try {
+        WidgetsFlutterBinding.ensureInitialized();
+    
+        if (Platform.isIOS) {
+          await InAppWebViewController.setWebContentsDebuggingEnabled(true);
+          await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+        }
 
-    if (Platform.isIOS) {
-      print('Running on iOS - configuring webview');
-      await InAppWebViewController.setWebContentsDebuggingEnabled(true);
-      await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    }
+        // Initialize timezones
+        tz.initializeTimeZones();
+        tz.setLocalLocation(tz.getLocation('America/Detroit'));
 
-    // Initialize timezones
-    tz.initializeTimeZones();
-    tz.setLocalLocation(tz.getLocation('America/Detroit'));
+        SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    // Initialize Shared Preferences
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    print('Shared Preferences initialized successfully.');
+        // Initialize notifications first to ensure proper permission handling
+        await NotificationService.initNotifications();
 
-    // Initialize other services
-    await Future.wait([
-      NotificationSettings.loadSettings(prefs),
-      NotificationService.initNotifications(),
-      ProgressService.updateStreakOnAppLaunch(),
-      NotificationService.scheduleEveningTip(),
-      ProgressService.scheduleMidnightCheck(),
-    ]);
+        // Initialize remaining services
+        await Future.wait([
+          NotificationSettings.loadSettings(prefs),
+          ProgressService.updateStreakOnAppLaunch(),
+          NotificationService.scheduleEveningTip(),
+          ProgressService.scheduleMidnightCheck(),
+        ]);
 
     // Replace loading screen with main app
     runApp(MyApp(prefs: prefs));
