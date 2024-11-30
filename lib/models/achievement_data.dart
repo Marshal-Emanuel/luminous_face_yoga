@@ -106,7 +106,7 @@ final List<Achievement> achievementsList = [
   Achievement(
     id: 'first_quiz',
     title: 'Self-Aware',
-    description: 'Completed your assessment quiz',
+    description: 'Completed Ageing habits quiz',
     icon: Icons.psychology,
     requiredCount: 1,
     category: AchievementCategory.quiz,

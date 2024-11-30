@@ -149,6 +149,7 @@ class _WebviewScreenState extends State<WebviewScreen> {
   bool _welcomeUnlocked = false;
   String _previousUrl = '';
   bool _isDisposed = false;
+  bool canGoBack = false;
 
   // URLs
   final String initialUrl = "https://www.luminousfaceyoga.com/login/";
@@ -473,15 +474,18 @@ class _WebviewScreenState extends State<WebviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(0),
-        child: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          systemOverlayStyle: SystemUiOverlayStyle.light,
+      appBar: canGoBack ? AppBar(
+        backgroundColor: const Color(0xFF18314F),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () async {
+            if (await webViewController?.canGoBack() ?? false) {
+              webViewController?.goBack();
+            }
+          },
         ),
-      ),
+      ) : null,
       floatingActionButton: Material(
         type: MaterialType.transparency,
         child: Column(
@@ -550,6 +554,7 @@ class _WebviewScreenState extends State<WebviewScreen> {
 
                 final currentUrl = url.toString();
                 await _handlePageLoad(currentUrl);
+                _updateNavigationState();
               },
               onProgressChanged: (controller, progress) {
                 if (_isDisposed) return;
@@ -562,6 +567,7 @@ class _WebviewScreenState extends State<WebviewScreen> {
                     });
                   }
                 }
+                _updateNavigationState();
               },
             ),
             if (isLoading) LoadingOverlay(),
@@ -642,6 +648,15 @@ class _WebviewScreenState extends State<WebviewScreen> {
       );
     } else {
       Navigator.of(context).pushNamed(route);
+    }
+  }
+
+  void _updateNavigationState() async {
+    if (webViewController != null) {
+      bool back = await webViewController!.canGoBack();
+      if (mounted) {
+        setState(() => canGoBack = back);
+      }
     }
   }
 }
