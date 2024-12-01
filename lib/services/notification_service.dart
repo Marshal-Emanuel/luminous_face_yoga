@@ -33,18 +33,7 @@ class NotificationService {
     static Future<bool> requestIOSPermissions() async {
       if (!Platform.isIOS) return true;
     
-      final permissionStatus = await AwesomeNotifications().requestPermissionToSendNotifications(
-        channelKey: 'basic_channel',
-        permissions: [
-          NotificationPermission.Alert,
-          NotificationPermission.Sound,
-          NotificationPermission.Badge,
-          NotificationPermission.Provisional,
-          NotificationPermission.Vibration,
-          NotificationPermission.Light,
-          NotificationPermission.CriticalAlert,
-        ]
-      );
+      final permissionStatus = await AwesomeNotifications().requestPermissionToSendNotifications();
     
       // Store permission status
       final prefs = await SharedPreferences.getInstance();
@@ -54,14 +43,8 @@ class NotificationService {
     }
 
     static Future<void> initNotifications() async {
-      if (Platform.isIOS) {
-        // Request critical alert permissions first
-        await requestIOSPermissions();
-      }
-    
       final initialized = await AwesomeNotifications().initialize(
-        // Use correct iOS icon path
-        Platform.isIOS ? null : 'resource://mipmap/notification_icon',
+        null, // Null for default icon (iOS uses app icon)
         [
           NotificationChannel(
             channelKey: 'basic_channel',
@@ -72,13 +55,22 @@ class NotificationService {
             importance: NotificationImportance.High,
             playSound: true,
             enableVibration: true,
-            criticalAlerts: true,
-          )
-        ]
+          ),
+          // Add other channels if necessary
+        ],
       );
     
       if (!initialized) {
         throw Exception('Notifications initialization failed');
+      }
+
+      if (Platform.isIOS) {
+        // Request notification permissions after initialization
+        final isAllowed = await requestIOSPermissions();
+        if (!isAllowed) {
+          print('Notification permissions not granted');
+          // Handle the case where permissions are not granted (optional)
+        }
       }
     }
 
