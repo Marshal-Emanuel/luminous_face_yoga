@@ -12,49 +12,49 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize notifications before running app
-  await NotificationService.initNotifications();
-  
-  if (Platform.isIOS) {
-    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  }
-
+void main() {
+  // Show UI immediately
   runApp(MaterialApp(
     home: LoadingScreen(),
     debugShowCheckedModeBanner: false,
   ));
+
+  // Initialize in background
+  initializeApp();
 }
 
 Future<void> initializeApp() async {
-      try {
-        WidgetsFlutterBinding.ensureInitialized();
-    
-        if (Platform.isIOS) {
-          await InAppWebViewController.setWebContentsDebuggingEnabled(true);
-          await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-        }
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
 
-        // Initialize timezones
-        tz.initializeTimeZones();
-        tz.setLocalLocation(tz.getLocation('America/Detroit'));
+    if (Platform.isIOS) {
+      await InAppWebViewController.setWebContentsDebuggingEnabled(true);
+      await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      
+      // Request iOS notification permissions immediately
+      final isAllowed = await NotificationService.requestIOSPermissions();
+      if (!isAllowed) {
+        print('Notification permissions not granted');
+        // Optionally show dialog to explain why notifications are needed
+      }
+    }
 
-        SharedPreferences prefs = await SharedPreferences.getInstance();
+    // Initialize notifications after permission check
+    await NotificationService.initNotifications();
 
-        // Initialize notifications first to ensure proper permission handling
-        await NotificationService.initNotifications();
+    // Rest of initialization
+    tz.initializeTimeZones();
+    tz.setLocalLocation(tz.getLocation('America/Detroit'));
 
-        // Initialize remaining services
-        await Future.wait([
-          NotificationSettings.loadSettings(prefs),
-          ProgressService.updateStreakOnAppLaunch(),
-          NotificationService.scheduleEveningTip(),
-          ProgressService.scheduleMidnightCheck(),
-        ]);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    // Replace loading screen with main app
+    await Future.wait([
+      NotificationSettings.loadSettings(prefs),
+      ProgressService.updateStreakOnAppLaunch(),
+      NotificationService.scheduleEveningTip(),
+      ProgressService.scheduleMidnightCheck(),
+    ]);
+
     runApp(MyApp(prefs: prefs));
   } catch (e, stackTrace) {
     print('Error in initialization: $e');
