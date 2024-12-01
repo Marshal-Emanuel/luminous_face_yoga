@@ -14,8 +14,6 @@ workflows:
         XCODE_SCHEME: "Runner"
         BUNDLE_ID: "com.luminous.faceyoga"
         CERTIFICATE_PASSWORD: marshal
-        APP_STORE_CONNECT_KEY_ID: "598NXGQP94"
-        APP_STORE_CONNECT_ISSUER_ID: "803c9557-3ebe-4980-8094-eefc59700039"
       xcode: latest
       cocoapods: default
 
@@ -23,15 +21,11 @@ workflows:
       - name: Set up code signing
         script: | 
           keychain initialize
-          app-store-connect fetch-signing-files \
-            "$BUNDLE_ID" \
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create \
             --platform IOS \
-            --certificate-key-password marshal \
-            --key-id "$APP_STORE_CONNECT_KEY_ID" \
-            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
-            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY"
+            --certificate-key "$CERTIFICATE_PASSWORD"
 
       - name: Configure Push Notifications
         script: |
