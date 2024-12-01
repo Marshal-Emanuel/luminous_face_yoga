@@ -13,7 +13,7 @@ workflows:
         XCODE_WORKSPACE: "ios/Runner.xcworkspace"
         XCODE_SCHEME: "Runner"
         BUNDLE_ID: "com.luminous.faceyoga"
-        CERTIFICATE_PASSWORD: marshal
+        CERTIFICATE_PASSWORD: $CERTIFICATE_PASSWORD  # Reference environment variable
       xcode: latest
       cocoapods: default
 
@@ -25,7 +25,7 @@ workflows:
             --type IOS_APP_STORE \
             --create \
             --platform IOS \
-            --certificate-key "$CERTIFICATE_PASSWORD" \
+            --certificate-key-password "$CERTIFICATE_PASSWORD" \  # Changed parameter name
             --private-key "@env:APP_STORE_CONNECT_PRIVATE_KEY"
 
       - name: Configure Push Notifications
