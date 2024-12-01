@@ -21,11 +21,12 @@ workflows:
       - name: Set up code signing
         script: | 
           keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+          app-store-connect fetch-signing-files \
+            "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create \
             --platform IOS \
-            --certificate-key-password "$CERTIFICATE_PASSWORD" \  # Changed parameter name
+            --certificate-key-password "$CERTIFICATE_PASSWORD" \
             --private-key "@env:APP_STORE_CONNECT_PRIVATE_KEY"
 
       - name: Configure Push Notifications
