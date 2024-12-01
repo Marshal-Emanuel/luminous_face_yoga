@@ -22,29 +22,9 @@ workflows:
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create \
-            --platform IOS \
-            --certificate-key "$CERTIFICATE_PASSWORD"
+            --platform IOS
 
-      - name: Configure Xcode project capabilities
-        script: |
-          xcode-project enable-capability \
-            --path ios/Runner.xcodeproj \
-            --capability push-notifications \
-            --team-id P8YJ3F8N6A
-
-      - name: Set export compliance
-        script: |
-          EXPORT_OPTIONS_PLIST=/Users/builder/export_options.plist
-          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" $EXPORT_OPTIONS_PLIST
-
-      - name: Flutter build
-        script: |
-          flutter pub get
-          flutter build ipa --release \
-            --build-number=$(($(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID") + 1)) \
-            --export-options-plist=/Users/builder/export_options.plist
-
-      - name: Add Push Notification capability
+      - name: Configure Push Notifications
         script: |
           xcode-project enable-capability \
             --path ios/Runner.xcodeproj \
@@ -60,6 +40,13 @@ workflows:
               <string>production</string>
           </dict>
           </plist>' > ios/Runner/Runner.entitlements
+
+      - name: Flutter build
+        script: |
+          flutter pub get
+          flutter build ipa --release \
+            --build-number=$(($(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID") + 1)) \
+            --export-options-plist=/Users/builder/export_options.plist
 
     artifacts:
       - build/ios/ipa/*.ipa
