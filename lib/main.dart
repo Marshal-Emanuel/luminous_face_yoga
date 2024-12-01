@@ -12,15 +12,20 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-void main() {
-  // Show UI immediately
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize notifications before running app
+  await NotificationService.initNotifications();
+  
+  if (Platform.isIOS) {
+    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  }
+
   runApp(MaterialApp(
     home: LoadingScreen(),
     debugShowCheckedModeBanner: false,
   ));
-
-  // Initialize in background
-  initializeApp();
 }
 
 Future<void> initializeApp() async {

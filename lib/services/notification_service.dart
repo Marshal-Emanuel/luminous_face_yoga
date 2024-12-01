@@ -54,52 +54,35 @@ class NotificationService {
     }
 
     static Future<void> initNotifications() async {
-      // Initialize first
+      if (Platform.isIOS) {
+        // Request critical alert permissions first
+        await requestIOSPermissions();
+      }
+    
       final initialized = await AwesomeNotifications().initialize(
-        Platform.isIOS 
-          ? 'resource://Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x'
-          : 'resource://mipmap/notification_icon',
+        // Use correct iOS icon path
+        Platform.isIOS ? null : 'resource://mipmap/notification_icon',
         [
           NotificationChannel(
             channelKey: 'basic_channel',
             channelName: 'Basic notifications',
             channelDescription: 'Notification channel for basic tests',
-            defaultColor: Color.fromARGB(200, 221, 181, 80),
-            ledColor: Colors.white,
-            importance: NotificationImportance.High,
-            playSound: true,
-            enableVibration: true,
-            soundSource: Platform.isIOS ? 'resource://raw/res_notification' : 'resource://raw/notification',
-            criticalAlerts: true,
-          ),
-          NotificationChannel(
-            channelKey: 'scheduled_channel',
-            channelName: 'Scheduled notifications',
-            channelDescription: 'Scheduled notifications channel',
             defaultColor: Color(0xFF66D7D1),
             ledColor: Color(0xFF465A72),
             importance: NotificationImportance.High,
             playSound: true,
             enableVibration: true,
             criticalAlerts: true,
-            onlyAlertOnce: false,
-          ),
-        ],
+          )
+        ]
       );
-
+    
       if (!initialized) {
-        throw Exception('Failed to initialize notifications');
-      }
-
-      // Request permissions for iOS
-      if (Platform.isIOS) {
-        final permissionGranted = await requestIOSPermissions();
-        if (!permissionGranted) {
-          print('iOS notification permissions not granted');
-        }
+        throw Exception('Notifications initialization failed');
       }
     }
-  static Future<void> scheduleDailyReminder({
+
+    static Future<void> scheduleDailyReminder({
     required int hour,
     required int minute,
   }) async {

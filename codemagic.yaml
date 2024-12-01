@@ -1,0 +1,82 @@
+workflows:
+  ios-production:
+    name: iOS Production
+    max_build_duration: 120
+    instance_type: mac_mini_m1
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.luminous.faceyoga
+        team_id: P8YJ3F8N6A
+      vars:
+        XCODE_WORKSPACE: "ios/Runner.xcworkspace"
+        XCODE_SCHEME: "Runner"
+        BUNDLE_ID: "com.luminous.faceyoga"
+        CERTIFICATE_PASSWORD: marshal  # Added certificate password
+      xcode: latest
+      cocoapods: default
+
+    scripts:
+      - name: Set up code signing
+        script: | 
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create \
+            --platform IOS \
+            --certificate-key "$CERTIFICATE_PASSWORD"
+
+      - name: Configure Xcode project capabilities
+        script: |
+          xcode-project enable-capability \
+            --path ios/Runner.xcodeproj \
+            --capability push-notifications \
+            --automatic-signing false \
+            --team-id P8YJ3F8N6A
+          
+          # Update entitlements
+          echo '<?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>aps-environment</key>
+              <string>production</string>
+          </dict>
+          </plist>' > ios/Runner/Runner.entitlements
+
+      - name: Set export compliance
+        script: |
+          EXPORT_OPTIONS_PLIST=/Users/builder/export_options.plist
+          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" $EXPORT_OPTIONS_PLIST
+
+      - name: Flutter build
+        script: |
+          flutter pub get
+          flutter build ipa --release \
+            --build-number=$(($(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID") + 1)) \
+            --export-options-plist=/Users/builder/export_options.plist
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+
+    publishing:
+      email:
+        recipients:
+          - marshcodes@gmail.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - Testers
+        compliance_settings:
+          export_compliance:
+            platform: ios
+            uses_encryption: false
+            is_exempt: true
+            compliance_level: exempt
+            encryption_updated: false
