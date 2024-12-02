@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import UserNotifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -29,6 +30,11 @@ import UIKit
             window?.overrideUserInterfaceStyle = .light
         }
         
+        // Setup notification delegate
+        if #available(iOS 10.0, *) {
+            UNUserNotificationCenter.current().delegate = self
+        }
+        
         // Register plugins
         GeneratedPluginRegistrant.register(with: self)
         
@@ -37,14 +43,24 @@ import UIKit
         
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
-  
-  override func applicationWillResignActive(_ application: UIApplication) {
-    super.applicationWillResignActive(application)
-    window?.resignFirstResponder()
-  }
-  
-  override func applicationDidBecomeActive(_ application: UIApplication) {
-    super.applicationDidBecomeActive(application)
-    window?.makeKeyAndVisible()
-  }
+    
+    // Add notification handling method
+    override func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.alert, .badge, .sound])
+    }
+    
+    // Keep existing lifecycle methods
+    override func applicationWillResignActive(_ application: UIApplication) {
+        super.applicationWillResignActive(application)
+        window?.resignFirstResponder()
+    }
+    
+    override func applicationDidBecomeActive(_ application: UIApplication) {
+        super.applicationDidBecomeActive(application)
+        window?.makeKeyAndVisible()
+    }
 }

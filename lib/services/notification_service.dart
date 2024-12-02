@@ -48,15 +48,47 @@ class NotificationService {
         [
           NotificationChannel(
             channelKey: 'basic_channel',
-            channelName: 'Basic notifications',
+            channelName: 'Basic Notifications',
             channelDescription: 'Notification channel for basic tests',
             defaultColor: Color(0xFF66D7D1),
             ledColor: Color(0xFF465A72),
             importance: NotificationImportance.High,
             playSound: true,
             enableVibration: true,
+            // Add iOS specific settings
+            defaultPrivacy: NotificationPrivacy.Private,
+            defaultRingtoneType: DefaultRingtoneType.Notification,
+            criticalAlerts: true,
           ),
-          // Add other channels if necessary
+          NotificationChannel(
+            channelKey: 'scheduled_channel',
+            channelName: 'Scheduled Notifications',
+            channelDescription: 'Channel for scheduled reminders and tips',
+            defaultColor: Color(0xFF66D7D1),
+            ledColor: Color(0xFF465A72),
+            importance: NotificationImportance.High,
+            playSound: true,
+            enableVibration: true,
+            // Add iOS specific settings
+            defaultPrivacy: NotificationPrivacy.Private,
+            defaultRingtoneType: DefaultRingtoneType.Notification,
+            criticalAlerts: true,
+          ),
+          NotificationChannel(
+            channelKey: 'achievements',
+            channelName: 'Achievement Notifications',
+            channelDescription: 'Channel for achievement notifications',
+            defaultColor: Color(0xFF66D7D1),
+            ledColor: Color(0xFF465A72),
+            importance: NotificationImportance.Default,
+            playSound: true,
+            enableVibration: true,
+            // Add iOS specific settings
+            defaultPrivacy: NotificationPrivacy.Private,
+            defaultRingtoneType: DefaultRingtoneType.Notification,
+            criticalAlerts: true,
+          ),
+          // Add any other channels you are using
         ],
       );
     

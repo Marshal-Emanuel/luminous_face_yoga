@@ -63,26 +63,36 @@ class _AppInitializerState extends State<AppInitializer> {
 
 Future<void> initializeApp() async {
   try {
+    print('Initialization started');
+
     if (Platform.isIOS) {
+      print('Running on iOS');
       await InAppWebViewController.setWebContentsDebuggingEnabled(true);
       await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     }
 
     // Initialize notifications
+    print('Initializing notifications...');
     await NotificationService.initNotifications();
+    print('Notifications initialized');
 
     // Rest of initialization
+    print('Initializing time zones...');
     tz.initializeTimeZones();
+    print('Time zones initialized');
 
     // Load settings and schedule notifications
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    print('SharedPreferences loaded');
 
+    print('Scheduling tasks...');
     await Future.wait([
       NotificationSettings.loadSettings(prefs),
       ProgressService.updateStreakOnAppLaunch(),
       NotificationService.scheduleEveningTip(),
       ProgressService.scheduleMidnightCheck(),
     ]);
+    print('Tasks scheduled');
 
   } catch (e, stackTrace) {
     print('Error in initialization: $e');

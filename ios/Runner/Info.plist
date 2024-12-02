@@ -92,5 +92,7 @@
 	    <string>badge</string>
 	    <string>sound</string>
 	</array>
+	<key>UNUserNotificationCenterDelegate</key>
+	<string>$(PRODUCT_MODULE_NAME).AppDelegate</string>
 </dict>
 </plist>
