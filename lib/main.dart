@@ -74,21 +74,50 @@ Future<void> initializeApp() async {
       }
     }
 
-    // Initialize notifications directly
-    await NotificationService.initNotifications();
-
-    // Load preferences and schedule
+    // Load preferences first - critical
     final prefs = await SharedPreferences.getInstance();
+    
+    // Initialize notifications but handle denial
+    bool notificationsAllowed = false;
+    try {
+      await NotificationService.initNotifications();
+      notificationsAllowed = await NotificationService.requestIOSPermissions();
+    } catch (e) {
+      print('Notification setup failed: $e');
+      // Store that notifications are disabled
+      await prefs.setBool('notifications_enabled', false);
+    }
+
+    // Only schedule if allowed
+    if (notificationsAllowed) {
+      try {
+        await Future.wait([
+          NotificationService.scheduleEveningTip(),
+          NotificationService.scheduleDailyReminder(
+            hour: prefs.getInt('notification_hour') ?? 9,
+            minute: prefs.getInt('notification_minute') ?? 0,
+          ),
+        ]);
+        await prefs.setBool('notifications_enabled', true);
+      } catch (e) {
+        print('Notification scheduling failed: $e');
+        await prefs.setBool('notifications_enabled', false);
+      }
+    }
+
+    // Continue with non-notification features
     await Future.wait([
       NotificationSettings.loadSettings(prefs),
       ProgressService.updateStreakOnAppLaunch(),
-      NotificationService.scheduleEveningTip(),
       ProgressService.scheduleMidnightCheck(),
     ]);
 
   } catch (e) {
     print('Error in initialization: $e');
-    throw e;
+    // Only throw if critical feature fails
+    if (!e.toString().contains('notification')) {
+      throw e;
+    }
   }
 }
 
