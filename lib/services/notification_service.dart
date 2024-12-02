@@ -111,7 +111,6 @@ class NotificationService {
     required int minute,
   }) async {
     await AwesomeNotifications().cancelSchedule(1);
-
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
         id: 1,
@@ -119,9 +118,6 @@ class NotificationService {
         title: 'Time for Face Yoga!',
         body: 'Ready for your daily facial exercises?',
         notificationLayout: NotificationLayout.Default,
-        displayOnForeground: true,
-        displayOnBackground: true,
-        category: NotificationCategory.Reminder,
       ),
       schedule: NotificationCalendar(
         hour: hour,
@@ -130,8 +126,6 @@ class NotificationService {
         millisecond: 0,
         repeats: true,
         allowWhileIdle: true,
-        preciseAlarm: true,
-        timeZone: await AwesomeNotifications().getLocalTimeZoneIdentifier(),
       ),
     );
   }

@@ -6,7 +6,6 @@ import 'package:luminous_face_yoga/services/notification_service.dart';
 import 'package:luminous_face_yoga/loading_screen.dart';
 import 'package:luminous_face_yoga/webview_screen.dart';
 import 'services/progress_service.dart';
-import 'package:timezone/data/latest.dart' as tz;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -61,43 +60,34 @@ class _AppInitializerState extends State<AppInitializer> {
   }
 }
 
+// In main.dart - Remove timezone initialization entirely
 Future<void> initializeApp() async {
   try {
     print('Initialization started');
 
     if (Platform.isIOS) {
-      print('Running on iOS');
-      await InAppWebViewController.setWebContentsDebuggingEnabled(true);
-      await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      try {
+        await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+        await InAppWebViewController.setWebContentsDebuggingEnabled(true);
+      } catch (e) {
+        print('iOS setup warning: $e');
+      }
     }
 
-    // Initialize notifications
-    print('Initializing notifications...');
+    // Initialize notifications directly
     await NotificationService.initNotifications();
-    print('Notifications initialized');
 
-    // Rest of initialization
-    print('Initializing time zones...');
-    tz.initializeTimeZones();
-    print('Time zones initialized');
-
-    // Load settings and schedule notifications
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    print('SharedPreferences loaded');
-
-    print('Scheduling tasks...');
+    // Load preferences and schedule
+    final prefs = await SharedPreferences.getInstance();
     await Future.wait([
       NotificationSettings.loadSettings(prefs),
       ProgressService.updateStreakOnAppLaunch(),
       NotificationService.scheduleEveningTip(),
       ProgressService.scheduleMidnightCheck(),
     ]);
-    print('Tasks scheduled');
 
-  } catch (e, stackTrace) {
+  } catch (e) {
     print('Error in initialization: $e');
-    print('Stack trace: $stackTrace');
-    // Rethrow the error to be caught by FutureBuilder
     throw e;
   }
 }
