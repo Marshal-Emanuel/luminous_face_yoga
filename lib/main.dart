@@ -70,57 +70,23 @@ Future<void> initializeApp() async {
       try {
         await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
         await InAppWebViewController.setWebContentsDebuggingEnabled(true);
-      } catch (e) {
-        print('iOS setup warning: $e');
+      } catch (error) { // Changed from 'e' to 'error'
+        print('iOS setup warning: $error');
       }
     }
 
     // Load preferences first - critical
     final prefs = await SharedPreferences.getInstance();
     
-    // Initialize notifications but handle denial    Future<void> initializeApp() async {
-      try {
-        print('Initialization started');
-    
-        // Existing iOS platform setup...
-        
-        final prefs = await SharedPreferences.getInstance();
-        
-        // Initialize notifications with proper permission handling
-        try {
-          await NotificationService.initNotifications();
-          final notificationsAllowed = await NotificationService.requestIOSPermissions();
-          await prefs.setBool('notifications_enabled', notificationsAllowed);
-          
-          if (notificationsAllowed) {
-            // Schedule notifications only if permission granted
-            await Future.wait([
-              NotificationService.scheduleEveningTip(),
-              NotificationService.scheduleDailyReminder(
-                hour: prefs.getInt('notification_hour') ?? 9,
-                minute: prefs.getInt('notification_minute') ?? 0,
-              ),
-            ]);
-          }
-        } catch (e) {
-          print('Notification setup failed: $e');
-          await prefs.setBool('notifications_enabled', false);
-        }
-    
-        // Continue with existing non-notification features...
-      } catch (e) {
-        print('Error in initialization: $e');
-        if (!e.toString().contains('notification')) {
-          throw e;
-        }
-      }
-    }
+    // Initialize notifications but handle denial
     bool notificationsAllowed = false;
     try {
       await NotificationService.initNotifications();
       notificationsAllowed = await NotificationService.requestIOSPermissions();
-    } catch (e) {
-      print('Notification setup failed: $e');
+      // Add this line to ensure permissions are stored
+      await prefs.setBool('notifications_enabled', notificationsAllowed);
+    } catch (error) { // Changed from 'e' to 'error'
+      print('Notification setup failed: $error');
       // Store that notifications are disabled
       await prefs.setBool('notifications_enabled', false);
     }
@@ -135,7 +101,6 @@ Future<void> initializeApp() async {
             minute: prefs.getInt('notification_minute') ?? 0,
           ),
         ]);
-        await prefs.setBool('notifications_enabled', true);
       } catch (e) {
         print('Notification scheduling failed: $e');
         await prefs.setBool('notifications_enabled', false);
@@ -149,11 +114,11 @@ Future<void> initializeApp() async {
       ProgressService.scheduleMidnightCheck(),
     ]);
 
-  } catch (e) {
-    print('Error in initialization: $e');
+  } catch (error) { // Changed from 'e' to 'error' to be explicit
+    print('Error in initialization: $error');
     // Only throw if critical feature fails
-    if (!e.toString().contains('notification')) {
-      throw e;
+    if (!error.toString().contains('notification')) {
+      throw error;
     }
   }
 }
