@@ -10,9 +10,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized(); // Ensures plugin services are initialized
-
+// In main.dart - Move initialization to before runApp
+void main() async {  // Make main async
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeApp();  // Wait for initialization
   runApp(AppInitializer());
 }
 
@@ -77,7 +78,43 @@ Future<void> initializeApp() async {
     // Load preferences first - critical
     final prefs = await SharedPreferences.getInstance();
     
-    // Initialize notifications but handle denial
+    // Initialize notifications but handle denial    Future<void> initializeApp() async {
+      try {
+        print('Initialization started');
+    
+        // Existing iOS platform setup...
+        
+        final prefs = await SharedPreferences.getInstance();
+        
+        // Initialize notifications with proper permission handling
+        try {
+          await NotificationService.initNotifications();
+          final notificationsAllowed = await NotificationService.requestIOSPermissions();
+          await prefs.setBool('notifications_enabled', notificationsAllowed);
+          
+          if (notificationsAllowed) {
+            // Schedule notifications only if permission granted
+            await Future.wait([
+              NotificationService.scheduleEveningTip(),
+              NotificationService.scheduleDailyReminder(
+                hour: prefs.getInt('notification_hour') ?? 9,
+                minute: prefs.getInt('notification_minute') ?? 0,
+              ),
+            ]);
+          }
+        } catch (e) {
+          print('Notification setup failed: $e');
+          await prefs.setBool('notifications_enabled', false);
+        }
+    
+        // Continue with existing non-notification features...
+      } catch (e) {
+        print('Error in initialization: $e');
+        if (!e.toString().contains('notification')) {
+          throw e;
+        }
+      }
+    }
     bool notificationsAllowed = false;
     try {
       await NotificationService.initNotifications();
