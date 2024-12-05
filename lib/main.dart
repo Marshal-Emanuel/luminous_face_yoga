@@ -23,20 +23,81 @@ class AppInitializer extends StatefulWidget {
 }
 
 class _AppInitializerState extends State<AppInitializer> {
+  Future<void>? _initializationFuture;
+
   @override
   void initState() {
     super.initState();
-    // Start async initialization after UI renders
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeAsync();
-    });
+    _initializationFuture = _initializeWithLogs();
+  }
+
+  Future<void> _initializeWithLogs() async {
+    try {
+      print('Starting app initialization...');
+      
+      if (Platform.isIOS) {
+        print('iOS specific initialization...');
+        await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+        await InAppWebViewController.setWebContentsDebuggingEnabled(true);
+        print('iOS orientation and webview debug set');
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      print('SharedPreferences initialized');
+
+      final bool permissionAsked = prefs.getBool('notification_permission_asked') ?? false;
+      print('Previous permission status: $permissionAsked');
+
+      if (!permissionAsked) {
+        print('Requesting notification permission...');
+        final bool allowed = await NotificationService.initNotifications();
+        await prefs.setBool('notification_permission_asked', true);
+        print('Permission result: $allowed');
+
+        if (allowed) {
+          print('Setting up notifications...');
+          await NotificationService.scheduleDailyReminder(
+            hour: prefs.getInt('notification_hour') ?? 9,
+            minute: prefs.getInt('notification_minute') ?? 0,
+          );
+          print('Daily reminder scheduled');
+          await NotificationService.scheduleEveningTip();
+          print('Evening tip scheduled');
+        }
+      }
+
+      print('Loading remaining settings...');
+      await Future.wait([
+        NotificationSettings.loadSettings(prefs),
+        ProgressService.updateStreakOnAppLaunch(),
+        ProgressService.scheduleMidnightCheck(),
+      ]);
+      print('Initialization complete');
+
+    } catch (e, stack) {
+      print('Initialization error: $e');
+      print('Stack trace: $stack');
+      throw e;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Show WebviewScreen immediately
     return MaterialApp(
-      home: WebviewScreen(),
+      home: FutureBuilder<void>(
+        future: _initializationFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return LoadingScreen();
+          } else if (snapshot.hasError) {
+            print('Error in initialization: ${snapshot.error}');
+            return Scaffold(
+              body: Center(child: Text('Error during initialization')),
+            );
+          }
+          return WebviewScreen();
+        },
+      ),
       debugShowCheckedModeBanner: false,
       routes: {
         '/home': (context) => SafeArea(child: WebviewScreen()),
@@ -44,45 +105,6 @@ class _AppInitializerState extends State<AppInitializer> {
         '/progress': (context) => SafeArea(child: ProgressScreen()),
       },
     );
-  }
-
-  Future<void> _initializeAsync() async {
-    try {
-      // iOS specific setup
-      if (Platform.isIOS) {
-        await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-        await InAppWebViewController.setWebContentsDebuggingEnabled(true);
-      }
-
-      final prefs = await SharedPreferences.getInstance();
-      
-      // Check if permission was previously asked
-      final bool permissionAsked = prefs.getBool('notification_permission_asked') ?? false;
-      
-      if (!permissionAsked) {
-        // First time: Ask for permission
-        final bool allowed = await NotificationService.initNotifications();
-        await prefs.setBool('notification_permission_asked', true);
-        
-        if (allowed) {
-          // Only schedule if permission granted
-          await NotificationService.scheduleDailyReminder(
-            hour: prefs.getInt('notification_hour') ?? 9,
-            minute: prefs.getInt('notification_minute') ?? 0,
-          );
-          await NotificationService.scheduleEveningTip();
-        }
-      }
-
-      // Load other settings
-      await NotificationSettings.loadSettings(prefs);
-      await ProgressService.updateStreakOnAppLaunch();
-      await ProgressService.scheduleMidnightCheck();
-
-    } catch (e) {
-      print('Initialization error: $e');
-      // Error won't show on screen since UI is already rendered
-    }
   }
 }
 
