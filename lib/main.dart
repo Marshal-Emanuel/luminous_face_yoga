@@ -14,7 +14,7 @@ import 'package:timezone/data/latest.dart' as tz;
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   tz.initializeTimeZones();
-  runApp(AppInitializer());  // Run app immediately
+  runApp(AppInitializer()); // Run app immediately
 }
 
 class AppInitializer extends StatefulWidget {
@@ -28,7 +28,7 @@ class _AppInitializerState extends State<AppInitializer> {
   @override
   void initState() {
     super.initState();
-    _initializationFuture = initializeApp();
+    _initializationFuture = _initializeAppWithNotifications();
   }
 
   @override
@@ -52,33 +52,23 @@ class _AppInitializerState extends State<AppInitializer> {
     );
   }
 
-  Future<void> initializeApp() async {
+  Future<void> _initializeAppWithNotifications() async {
     try {
-      print('Initialization started');
+      print('Starting critical initialization');
+
+      // Critical initializations first
       if (Platform.isIOS) {
-        await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+        await SystemChrome.setPreferredOrientations(
+            [DeviceOrientation.portraitUp]);
         await InAppWebViewController.setWebContentsDebuggingEnabled(true);
       }
 
       final prefs = await SharedPreferences.getInstance();
-      bool notificationsAllowed = await NotificationService.initNotifications();
-      
-      if (notificationsAllowed) {
-        try {
-          await NotificationService.cancelAllNotifications();
-          await Future.wait([
-            NotificationService.scheduleEveningTip(),
-            NotificationService.scheduleDailyReminder(
-              hour: prefs.getInt('notification_hour') ?? 9,
-              minute: prefs.getInt('notification_minute') ?? 0,
-            ),
-          ]);
-        } catch (notificationError) {
-          print('Notification scheduling failed: $notificationError');
-          // Continue app initialization even if notifications fail
-        }
-      }
 
+      // Start notification setup in background
+      _handleNotifications(prefs);
+
+      // Continue with other initializations
       await Future.wait([
         NotificationSettings.loadSettings(prefs),
         ProgressService.updateStreakOnAppLaunch(),
@@ -86,8 +76,26 @@ class _AppInitializerState extends State<AppInitializer> {
       ]);
     } catch (error) {
       print('Critical initialization error: $error');
-      // Allow the FutureBuilder to handle the error
       throw error;
+    }
+  }
+
+  Future<void> _handleNotifications(SharedPreferences prefs) async {
+    try {
+      bool notificationsAllowed = await NotificationService.initNotifications();
+      if (notificationsAllowed) {
+        await NotificationService.cancelAllNotifications();
+        await Future.wait([
+          NotificationService.scheduleEveningTip(),
+          NotificationService.scheduleDailyReminder(
+            hour: prefs.getInt('notification_hour') ?? 9,
+            minute: prefs.getInt('notification_minute') ?? 0,
+          ),
+        ]);
+      }
+    } catch (e) {
+      print('Non-critical notification error: $e');
+      // Don't throw - let app continue
     }
   }
 }
