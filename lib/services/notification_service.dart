@@ -81,7 +81,7 @@ class NotificationService {
     if (_isInitialized) return true;
     
     try {
-      print('Initializing notifications...');
+      // 1. Basic initialization without permissions
       final initialized = await AwesomeNotifications().initialize(
         null,
         [
@@ -91,78 +91,53 @@ class NotificationService {
             channelDescription: 'Channel for scheduled reminders and tips',
             defaultColor: Color(0xFF66D7D1),
             importance: NotificationImportance.High,
-            locked: false,
-            enableVibration: true,
-            playSound: true,
           ),
-          NotificationChannel(
-            channelKey: 'basic_channel',
-            channelName: 'Basic Notifications',
-            channelDescription: 'Channel for basic notifications',
-            defaultColor: Color(0xFF66D7D1),
-            importance: NotificationImportance.High,
-            enableVibration: true,
-            playSound: true,
-          ),
-          NotificationChannel(
-            channelKey: 'achievements',
-            channelName: 'Achievements',
-            channelDescription: 'Channel for achievement notifications',
-            defaultColor: Color(0xFF66D7D1),
-            importance: NotificationImportance.High,
-            enableVibration: true,
-            playSound: true,
-          ),
+          // Other channels...
         ],
         debug: true,
       );
 
       if (!initialized) {
-        print('Failed to initialize notification channels');
+        print('Failed to initialize channels');
         return false;
       }
 
-      print('Checking notification permissions...');
-      bool permissionStatus = await AwesomeNotifications().isNotificationAllowed();
-      if (!permissionStatus) {
-        print('Requesting notification permissions...');
-        permissionStatus = await AwesomeNotifications().requestPermissionToSendNotifications();
+      // 2. Platform specific handling
+      if (Platform.isIOS) {
+        final permissionResult = await _requestIOSPermission();
+        _isInitialized = permissionResult;
+        return permissionResult;
       }
 
-      _isInitialized = permissionStatus;
-      print('Notification initialization complete. Permissions granted: $permissionStatus');
-      
-      // Send test notification if permissions granted
-      if (permissionStatus) {
-        await sendTestNotification();
-      }
+      // 3. Android flow
+      _isInitialized = true;
+      return true;
 
-      return permissionStatus;
     } catch (e) {
-      print('Notification initialization failed: $e');
-      _isInitialized = false;
+      print('Initialization failed: $e');
       return false;
     }
   }
 
-  // Make this private since it's now handled internally
-  static Future<bool> _handleIOSPermissions() async {
-    final shouldPrompt = await shouldRequestPermission();
-    if (!shouldPrompt) {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getString(_permissionKey) == 'granted';
+  static Future<bool> _requestIOSPermission() async {
+    final prefs = await SharedPreferences.getInstance();
+    final firstTime = !(prefs.getBool('notification_permission_asked') ?? false);
+
+    if (firstTime) {
+      // First time: Show system permission dialog
+      final permissionGranted = await AwesomeNotifications()
+          .requestPermissionToSendNotifications();
+      
+      // Store result
+      await prefs.setBool('notification_permission_asked', true);
+      await prefs.setString(_permissionKey, 
+          permissionGranted ? 'granted' : 'denied');
+      
+      return permissionGranted;
     }
 
-    final permissionStatus = await AwesomeNotifications()
-        .requestPermissionToSendNotifications();
-    
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_permissionKey, 
-        permissionStatus ? 'granted' : 'denied');
-    await prefs.setString(_lastPromptDateKey, 
-        DateTime.now().toIso8601String());
-
-    return permissionStatus;
+    // Not first time: Check stored permission
+    return await AwesomeNotifications().isNotificationAllowed();
   }
 
   static Future<void> scheduleDailyReminder({

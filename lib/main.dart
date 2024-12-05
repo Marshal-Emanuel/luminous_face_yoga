@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:luminous_face_yoga/screens/notification_settings.dart';
 import 'package:luminous_face_yoga/screens/progress_screen.dart';
 import 'package:luminous_face_yoga/services/notification_service.dart';
-import 'package:luminous_face_yoga/loading_screen.dart';
+
 import 'package:luminous_face_yoga/webview_screen.dart';
 import 'services/progress_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
