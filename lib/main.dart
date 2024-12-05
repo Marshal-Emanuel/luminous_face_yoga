@@ -10,11 +10,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-// In main.dart - Move initialization to before runApp
-void main() async {  // Make main async
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeApp();  // Wait for initialization
-  runApp(AppInitializer());
+  runApp(AppInitializer());  // Run app immediately
 }
 
 class AppInitializer extends StatefulWidget {
@@ -28,9 +26,17 @@ class _AppInitializerState extends State<AppInitializer> {
   @override
   void initState() {
     super.initState();
-
-    // Start initialization process
-    _initializationFuture = initializeApp();
+    _initializationFuture = initializeApp().then((_) {
+      // Initialization complete, navigate if needed
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => MyApp()),
+        );
+      }
+    }).catchError((error) {
+      print('Initialization error: $error');
+    });
   }
 
   @override
@@ -101,8 +107,8 @@ Future<void> initializeApp() async {
             minute: prefs.getInt('notification_minute') ?? 0,
           ),
         ]);
-      } catch (e) {
-        print('Notification scheduling failed: $e');
+      } catch (error) {
+        print('Notification scheduling failed: $error');
         await prefs.setBool('notifications_enabled', false);
       }
     }
