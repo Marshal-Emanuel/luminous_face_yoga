@@ -81,6 +81,7 @@ class NotificationService {
     if (_isInitialized) return true;
     
     try {
+      print('Initializing notifications...');
       final initialized = await AwesomeNotifications().initialize(
         null,
         [
@@ -91,6 +92,8 @@ class NotificationService {
             defaultColor: Color(0xFF66D7D1),
             importance: NotificationImportance.High,
             locked: false,
+            enableVibration: true,
+            playSound: true,
           ),
           NotificationChannel(
             channelKey: 'basic_channel',
@@ -98,6 +101,8 @@ class NotificationService {
             channelDescription: 'Channel for basic notifications',
             defaultColor: Color(0xFF66D7D1),
             importance: NotificationImportance.High,
+            enableVibration: true,
+            playSound: true,
           ),
           NotificationChannel(
             channelKey: 'achievements',
@@ -105,21 +110,33 @@ class NotificationService {
             channelDescription: 'Channel for achievement notifications',
             defaultColor: Color(0xFF66D7D1),
             importance: NotificationImportance.High,
+            enableVibration: true,
+            playSound: true,
           ),
         ],
         debug: true,
       );
 
       if (!initialized) {
-        throw Exception('Notifications initialization failed');
+        print('Failed to initialize notification channels');
+        return false;
       }
 
+      print('Checking notification permissions...');
       bool permissionStatus = await AwesomeNotifications().isNotificationAllowed();
       if (!permissionStatus) {
+        print('Requesting notification permissions...');
         permissionStatus = await AwesomeNotifications().requestPermissionToSendNotifications();
       }
 
       _isInitialized = permissionStatus;
+      print('Notification initialization complete. Permissions granted: $permissionStatus');
+      
+      // Send test notification if permissions granted
+      if (permissionStatus) {
+        await sendTestNotification();
+      }
+
       return permissionStatus;
     } catch (e) {
       print('Notification initialization failed: $e');
@@ -269,6 +286,7 @@ static Future<void> sendMissedStreakNotification(int currentStreak) async {
 }
 
 static Future<void> sendTestNotification() async {
+  print('Sending test notification...');
   await AwesomeNotifications().createNotification(
     content: NotificationContent(
       id: 999, // Unique ID for the notification
