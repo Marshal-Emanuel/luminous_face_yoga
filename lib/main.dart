@@ -23,79 +23,65 @@ class AppInitializer extends StatefulWidget {
 }
 
 class _AppInitializerState extends State<AppInitializer> {
-  Future<void>? _initializationFuture;
-
   @override
   void initState() {
     super.initState();
-    _initializationFuture = _initializeAppWithNotifications();
+    // Start async initialization after UI renders
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeAsync();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    // Show WebviewScreen immediately
     return MaterialApp(
-      home: FutureBuilder<void>(
-        future: _initializationFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return LoadingScreen();
-          } else if (snapshot.hasError) {
-            return Scaffold(
-              body: Center(child: Text('Error during initialization')),
-            );
-          } else {
-            return MyApp();
-          }
-        },
-      ),
+      home: WebviewScreen(),
       debugShowCheckedModeBanner: false,
+      routes: {
+        '/home': (context) => SafeArea(child: WebviewScreen()),
+        '/settings': (context) => SafeArea(child: NotificationSettings()),
+        '/progress': (context) => SafeArea(child: ProgressScreen()),
+      },
     );
   }
 
-  Future<void> _initializeAppWithNotifications() async {
+  Future<void> _initializeAsync() async {
     try {
-      print('Starting critical initialization');
-
-      // Critical initializations first
+      // iOS specific setup
       if (Platform.isIOS) {
-        await SystemChrome.setPreferredOrientations(
-            [DeviceOrientation.portraitUp]);
+        await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
         await InAppWebViewController.setWebContentsDebuggingEnabled(true);
       }
 
       final prefs = await SharedPreferences.getInstance();
-
-      // Start notification setup in background
-      _handleNotifications(prefs);
-
-      // Continue with other initializations
-      await Future.wait([
-        NotificationSettings.loadSettings(prefs),
-        ProgressService.updateStreakOnAppLaunch(),
-        ProgressService.scheduleMidnightCheck(),
-      ]);
-    } catch (error) {
-      print('Critical initialization error: $error');
-      throw error;
-    }
-  }
-
-  Future<void> _handleNotifications(SharedPreferences prefs) async {
-    try {
-      bool notificationsAllowed = await NotificationService.initNotifications();
-      if (notificationsAllowed) {
-        await NotificationService.cancelAllNotifications();
-        await Future.wait([
-          NotificationService.scheduleEveningTip(),
-          NotificationService.scheduleDailyReminder(
+      
+      // Check if permission was previously asked
+      final bool permissionAsked = prefs.getBool('notification_permission_asked') ?? false;
+      
+      if (!permissionAsked) {
+        // First time: Ask for permission
+        final bool allowed = await NotificationService.initNotifications();
+        await prefs.setBool('notification_permission_asked', true);
+        
+        if (allowed) {
+          // Only schedule if permission granted
+          await NotificationService.scheduleDailyReminder(
             hour: prefs.getInt('notification_hour') ?? 9,
             minute: prefs.getInt('notification_minute') ?? 0,
-          ),
-        ]);
+          );
+          await NotificationService.scheduleEveningTip();
+        }
       }
+
+      // Load other settings
+      await NotificationSettings.loadSettings(prefs);
+      await ProgressService.updateStreakOnAppLaunch();
+      await ProgressService.scheduleMidnightCheck();
+
     } catch (e) {
-      print('Non-critical notification error: $e');
-      // Don't throw - let app continue
+      print('Initialization error: $e');
+      // Error won't show on screen since UI is already rendered
     }
   }
 }
