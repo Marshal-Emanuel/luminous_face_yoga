@@ -41,8 +41,6 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSUserNotificationsUsageDescription</key>
@@ -62,12 +60,10 @@
 	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>fetch</string>
 		<string>remote-notification</string>
+		<string>fetch</string>
 		<string>processing</string>
 	</array>
-	<key>NSProcessInfoPowerStateDidChangeNotification</key>
-	<true/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>UIRequiresFullScreen</key>
@@ -82,17 +78,5 @@
 	    <string>com.luminous.faceyoga.processing</string>
 	    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	</array>
-	<key>UIRequiresPersistentWiFi</key>
-	<true/>
-	<key>UNUserNotificationCenterEnabled</key>
-	<true/>
-	<key>UNAuthorizationOptions</key>
-	<array>
-	    <string>alert</string>
-	    <string>badge</string>
-	    <string>sound</string>
-	</array>
-	<key>UNUserNotificationCenterDelegate</key>
-	<string>$(PRODUCT_MODULE_NAME).AppDelegate</string>
 </dict>
 </plist>

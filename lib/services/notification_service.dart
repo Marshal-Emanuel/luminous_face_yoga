@@ -1,9 +1,12 @@
+import 'dart:ui';
+
 import 'package:awesome_notifications/awesome_notifications.dart';
-import 'package:flutter/material.dart';
+
 
 import 'dart:io';
 
 import 'package:shared_preferences/shared_preferences.dart';
+
 
 class NotificationService {
   static final List<String> eveningTips = [
@@ -75,71 +78,49 @@ class NotificationService {
 
   // Modify initNotifications to handle both initialization and permissions
   static Future<bool> initNotifications() async {
-    // Prevent multiple initialization
     if (_isInitialized) return true;
     
     try {
       final initialized = await AwesomeNotifications().initialize(
         null,
         [
-          // Keep existing channel configurations
           NotificationChannel(
             channelKey: 'scheduled_channel',
             channelName: 'Scheduled Notifications',
             channelDescription: 'Channel for scheduled reminders and tips',
             defaultColor: Color(0xFF66D7D1),
-            ledColor: Color(0xFF465A72),
             importance: NotificationImportance.High,
-            defaultPrivacy: NotificationPrivacy.Private,
-            defaultRingtoneType: DefaultRingtoneType.Notification,
-            onlyAlertOnce: false,
-            playSound: true,
-            enableVibration: true,
-            enableLights: true,
+            locked: false,
           ),
           NotificationChannel(
             channelKey: 'basic_channel',
             channelName: 'Basic Notifications',
-            channelDescription: 'Notification channel for basic tests',
+            channelDescription: 'Channel for basic notifications',
             defaultColor: Color(0xFF66D7D1),
-            ledColor: Color(0xFF465A72),
             importance: NotificationImportance.High,
-            playSound: true,
-            enableVibration: true,
-            // Add iOS specific settings
-            defaultPrivacy: NotificationPrivacy.Private,
-            defaultRingtoneType: DefaultRingtoneType.Notification,
           ),
           NotificationChannel(
             channelKey: 'achievements',
-            channelName: 'Achievement Notifications',
+            channelName: 'Achievements',
             channelDescription: 'Channel for achievement notifications',
             defaultColor: Color(0xFF66D7D1),
-            ledColor: Color(0xFF465A72),
-            importance: NotificationImportance.Default,
-            playSound: true,
-            enableVibration: true,
-            // Add iOS specific settings
-            defaultPrivacy: NotificationPrivacy.Private,
-            defaultRingtoneType: DefaultRingtoneType.Notification,
+            importance: NotificationImportance.High,
           ),
-          // Add any other channels you are using
         ],
+        debug: true,
       );
 
       if (!initialized) {
         throw Exception('Notifications initialization failed');
       }
 
-      // Handle permissions in the same method
-      if (Platform.isIOS) {
-        final permissionStatus = await _handleIOSPermissions();
-        _isInitialized = permissionStatus;
-        return permissionStatus;
+      bool permissionStatus = await AwesomeNotifications().isNotificationAllowed();
+      if (!permissionStatus) {
+        permissionStatus = await AwesomeNotifications().requestPermissionToSendNotifications();
       }
 
-      _isInitialized = true;
-      return true;
+      _isInitialized = permissionStatus;
+      return permissionStatus;
     } catch (e) {
       print('Notification initialization failed: $e');
       _isInitialized = false;
@@ -187,6 +168,7 @@ class NotificationService {
       millisecond: 0,
       repeats: true,
       allowWhileIdle: true,
+      timeZone: await AwesomeNotifications().getLocalTimeZoneIdentifier(),
     ),
   );
 }
@@ -208,10 +190,14 @@ static Future<void> sendNotification(
 
 static Future<void> scheduleEveningTip() async {
   final tipIndex = DateTime.now().day % eveningTips.length;
+  
+  // Cancel existing notification with the same ID
+  await AwesomeNotifications().cancelSchedule(2);
+  
   await AwesomeNotifications().createNotification(
     content: NotificationContent(
       id: 2,
-      channelKey: 'scheduled_channel',  // Changed from 'engagement'
+      channelKey: 'scheduled_channel',
       title: 'Face Yoga Tip',
       body: eveningTips[tipIndex],
       notificationLayout: NotificationLayout.Default,
@@ -219,7 +205,10 @@ static Future<void> scheduleEveningTip() async {
     schedule: NotificationCalendar(
       hour: 20,
       minute: 0,
-      repeats: false,
+      second: 0,
+      repeats: true,
+      allowWhileIdle: true,
+      timeZone: await AwesomeNotifications().getLocalTimeZoneIdentifier(),
     ),
   );
 }
@@ -263,7 +252,7 @@ static Future<void> scheduleShopReminder() async {
 }
 
 static Future<void> cancelAllNotifications() async {
-  await AwesomeNotifications().cancelAll();
+  await AwesomeNotifications().cancelAllSchedules();
 }
 
 static Future<void> sendMissedStreakNotification(int currentStreak) async {
@@ -275,6 +264,18 @@ static Future<void> sendMissedStreakNotification(int currentStreak) async {
       body: 'You missed a day! Your current streak is now $currentStreak days. Log in to keep your streak going!',
       notificationLayout: NotificationLayout.Default,
       category: NotificationCategory.Reminder,
+    ),
+  );
+}
+
+static Future<void> sendTestNotification() async {
+  await AwesomeNotifications().createNotification(
+    content: NotificationContent(
+      id: 999, // Unique ID for the notification
+      channelKey: 'basic_channel',
+      title: 'Test Notification',
+      body: 'This is a test notification',
+      notificationLayout: NotificationLayout.Default,
     ),
   );
 }
