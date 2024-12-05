@@ -37,47 +37,56 @@ class _AppInitializerState extends State<AppInitializer> {
       
       if (Platform.isIOS) {
         print('iOS specific initialization...');
+        // Critical iOS setup first
         await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
         await InAppWebViewController.setWebContentsDebuggingEnabled(true);
         print('iOS orientation and webview debug set');
-      }
+        
+        // Get preferences
+        final prefs = await SharedPreferences.getInstance();
+        print('SharedPreferences initialized');
 
-      final prefs = await SharedPreferences.getInstance();
-      print('SharedPreferences initialized');
+        // Check if first time
+        final bool firstLaunch = !(prefs.getBool('notification_permission_asked') ?? false);
+        print('First launch check: $firstLaunch');
 
-      final bool permissionAsked = prefs.getBool('notification_permission_asked') ?? false;
-      print('Previous permission status: $permissionAsked');
+        if (firstLaunch) {
+          // Initialize notifications without scheduling
+          print('Initializing notifications for iOS...');
+          final bool allowed = await NotificationService.initNotifications();
+          await prefs.setBool('notification_permission_asked', true);
+          print('iOS Permission result: $allowed');
 
-      if (!permissionAsked) {
-        print('Requesting notification permission...');
-        final bool allowed = await NotificationService.initNotifications();
-        await prefs.setBool('notification_permission_asked', true);
-        print('Permission result: $allowed');
-
-        if (allowed) {
-          print('Setting up notifications...');
-          await NotificationService.scheduleDailyReminder(
-            hour: prefs.getInt('notification_hour') ?? 9,
-            minute: prefs.getInt('notification_minute') ?? 0,
-          );
-          print('Daily reminder scheduled');
-          await NotificationService.scheduleEveningTip();
-          print('Evening tip scheduled');
+          // Only schedule if allowed
+          if (allowed) {
+            print('Setting up iOS notifications...');
+            await Future.wait([
+              NotificationService.scheduleDailyReminder(
+                hour: prefs.getInt('notification_hour') ?? 9,
+                minute: prefs.getInt('notification_minute') ?? 0,
+              ),
+              NotificationService.scheduleEveningTip(),
+            ]);
+            print('iOS notifications scheduled');
+          }
         }
+
+        // Continue with non-notification initialization
+        print('Loading remaining settings...');
+        await Future.wait([
+          NotificationSettings.loadSettings(prefs),
+          ProgressService.updateStreakOnAppLaunch(),
+          ProgressService.scheduleMidnightCheck(),
+        ]);
+        print('iOS initialization complete');
+      } else {
+        // Android flow remains unchanged
+        // ... your existing Android code ...
       }
-
-      print('Loading remaining settings...');
-      await Future.wait([
-        NotificationSettings.loadSettings(prefs),
-        ProgressService.updateStreakOnAppLaunch(),
-        ProgressService.scheduleMidnightCheck(),
-      ]);
-      print('Initialization complete');
-
     } catch (e, stack) {
-      print('Initialization error: $e');
+      print('iOS Initialization error: $e');
       print('Stack trace: $stack');
-      throw e;
+      throw e; // Re-throw to show in UI
     }
   }
 
