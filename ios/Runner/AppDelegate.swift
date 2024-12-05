@@ -1,10 +1,9 @@
 import Flutter
 import UIKit
 import UserNotifications
-import awesome_notifications_ios // Changed import
 
 @main
-@objc class AppDelegate: FlutterAppDelegate { // Removed redundant UNUserNotificationCenterDelegate
+@objc class AppDelegate: FlutterAppDelegate {
     override func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -23,7 +22,6 @@ import awesome_notifications_ios // Changed import
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
     
-    // Added override keyword
     override func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
@@ -32,7 +30,6 @@ import awesome_notifications_ios // Changed import
         completionHandler([.alert, .badge, .sound])
     }
     
-    // Added override keyword
     override func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse,
