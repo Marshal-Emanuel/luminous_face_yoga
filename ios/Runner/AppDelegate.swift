@@ -2,8 +2,8 @@ import Flutter
 import UIKit
 import UserNotifications
 
-@main
-@objc class AppDelegate: FlutterAppDelegate {
+@UIApplicationMain
+@objc class AppDelegate: FlutterAppDelegate, UNUserNotificationCenterDelegate {
     override func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -30,7 +30,7 @@ import UserNotifications
             window?.overrideUserInterfaceStyle = .light
         }
         
-        // Setup notification delegate
+        // Setup local notification delegate
         if #available(iOS 10.0, *) {
             UNUserNotificationCenter.current().delegate = self
         }
@@ -44,7 +44,7 @@ import UserNotifications
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
     
-    // Add notification handling method
+    // Handle local notifications when app is in foreground
     override func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
@@ -53,7 +53,6 @@ import UserNotifications
         completionHandler([.alert, .badge, .sound])
     }
     
-    // Keep existing lifecycle methods
     override func applicationWillResignActive(_ application: UIApplication) {
         super.applicationWillResignActive(application)
         window?.resignFirstResponder()

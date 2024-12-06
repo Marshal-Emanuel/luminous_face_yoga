@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+
+// removed initialization of app launch form here tos synchrnous
+
+// ignore: unused_import
 import 'package:luminous_face_yoga/webview_screen.dart';
 
 class LoadingScreen extends StatefulWidget {
@@ -9,14 +13,12 @@ class LoadingScreen extends StatefulWidget {
 class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateMixin {
   late List<AnimationController> _controllers;
   final int numberOfDots = 5;
-  bool _navigationScheduled = false;
 
   @override
   void initState() {
     super.initState();
     print('Initializing loading screen...');
     
-    // Initialize animation controllers
     _controllers = List.generate(
       numberOfDots,
       (index) => AnimationController(
@@ -25,25 +27,9 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
       )..repeat(reverse: true),
     );
 
-    // Stagger dot animations
     for (var i = 0; i < numberOfDots; i++) {
       Future.delayed(Duration(milliseconds: i * 120), () {
         if (mounted) _controllers[i].forward();
-      });
-    }
-
-    // Schedule navigation only once
-    if (!_navigationScheduled) {
-      _navigationScheduled = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Future.delayed(Duration(seconds: 2), () {
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => WebviewScreen()),
-            );
-          }
-        });
       });
     }
   }

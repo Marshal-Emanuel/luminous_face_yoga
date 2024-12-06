@@ -62,8 +62,6 @@
 	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>fetch</string>
-		<string>remote-notification</string>
 		<string>processing</string>
 	</array>
 	<key>NSProcessInfoPowerStateDidChangeNotification</key>
@@ -80,7 +78,6 @@
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 	    <string>com.luminous.faceyoga.processing</string>
-	    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	</array>
 	<key>UIRequiresPersistentWiFi</key>
 	<true/>
@@ -92,7 +89,5 @@
 	    <string>badge</string>
 	    <string>sound</string>
 	</array>
-	<key>UNUserNotificationCenterDelegate</key>
-	<string>$(PRODUCT_MODULE_NAME).AppDelegate</string>
 </dict>
 </plist>

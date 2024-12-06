@@ -116,7 +116,7 @@ final List<Achievement> achievementsList = [
   ),
   Achievement(
     id: 'week_streak',
-    title: 'Weekly Warrior',
+    title: 'Weekly Wonder',
     description: '7 days consistent practice',
     icon: Icons.calendar_today,
     requiredCount: 7,
@@ -127,7 +127,7 @@ final List<Achievement> achievementsList = [
   ),
   Achievement(
     id: 'month_master',
-    title: 'Dedication Master',
+    title: 'Wellness goddess',
     description: '30 days of transformation',
     icon: Icons.workspace_premium,
     requiredCount: 30,

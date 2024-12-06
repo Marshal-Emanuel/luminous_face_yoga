@@ -22,102 +22,103 @@ class AppInitializer extends StatefulWidget {
 }
 
 class _AppInitializerState extends State<AppInitializer> {
-  Future<void>? _initializationFuture;
+  Future<SharedPreferences>? _initializationFuture;
 
   @override
   void initState() {
     super.initState();
+    _initializationFuture = _initialize();
+  }
 
-    // Start initialization process
-    _initializationFuture = initializeApp();
+  Future<SharedPreferences> _initialize() async {
+    if (Platform.isIOS) {
+      await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      await InAppWebViewController.setWebContentsDebuggingEnabled(true);
+    }
+    return await SharedPreferences.getInstance();
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<void>(
-      future: _initializationFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          // Show loading screen immediately
-          return MaterialApp(
-            home: LoadingScreen(),
-            debugShowCheckedModeBanner: false,
-          );
-        } else if (snapshot.hasError) {
-          // Handle errors during initialization
-          return MaterialApp(
-            home: Scaffold(
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: FutureBuilder<SharedPreferences>(
+        future: _initializationFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return LoadingScreen();
+          } else if (snapshot.hasError) {
+            return Scaffold(
               body: Center(child: Text('Error during initialization')),
-            ),
-            debugShowCheckedModeBanner: false,
-          );
-        } else {
-          // Initialization complete, show the main app
-          return MyApp();
-        }
-      },
+            );
+          } else {
+            return NotificationInitializer(prefs: snapshot.data!);
+          }
+        },
+      ),
     );
   }
 }
 
-// In main.dart - Remove timezone initialization entirely
-Future<void> initializeApp() async {
-  try {
-    print('Initialization started');
+class NotificationInitializer extends StatefulWidget {
+  final SharedPreferences prefs;
+  
+  const NotificationInitializer({Key? key, required this.prefs}) : super(key: key);
+  
+  @override
+  _NotificationInitializerState createState() => _NotificationInitializerState();
+}
 
-    if (Platform.isIOS) {
-      try {
-        await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-        await InAppWebViewController.setWebContentsDebuggingEnabled(true);
-      } catch (e) {
-        print('iOS setup warning: $e');
-      }
-    }
+class _NotificationInitializerState extends State<NotificationInitializer> {
+  @override
+  void initState() {
+    super.initState();
+    _initializeNotifications();
+  }
 
-    // Load preferences first - critical
-    final prefs = await SharedPreferences.getInstance();
-    
-    // Initialize notifications but handle denial
-    bool notificationsAllowed = false;
+  Future<void> _initializeNotifications() async {
     try {
-      await NotificationService.initNotifications();
-      notificationsAllowed = await NotificationService.requestIOSPermissions();
-    } catch (e) {
-      print('Notification setup failed: $e');
-      // Store that notifications are disabled
-      await prefs.setBool('notifications_enabled', false);
-    }
+      // Request permissions first
+      final notificationsAllowed = await NotificationService.requestIOSPermissions();
+      await widget.prefs.setBool('notifications_enabled', notificationsAllowed);
 
-    // Only schedule if allowed
-    if (notificationsAllowed) {
-      try {
-        await Future.wait([
-          NotificationService.scheduleEveningTip(),
-          NotificationService.scheduleDailyReminder(
-            hour: prefs.getInt('notification_hour') ?? 9,
-            minute: prefs.getInt('notification_minute') ?? 0,
-          ),
-        ]);
-        await prefs.setBool('notifications_enabled', true);
-      } catch (e) {
-        print('Notification scheduling failed: $e');
-        await prefs.setBool('notifications_enabled', false);
+      if (notificationsAllowed) {
+        // Initialize channels
+        await NotificationService.initNotifications();
+        
+        // Schedule notifications one by one
+        await NotificationService.scheduleEveningTip();
+        await NotificationService.scheduleDailyReminder(
+          hour: widget.prefs.getInt('notification_hour') ?? 9,
+          minute: widget.prefs.getInt('notification_minute') ?? 0,
+        );
+
+        // Initialize other services sequentially
+        await NotificationSettings.loadSettings(widget.prefs);
+        await ProgressService.updateStreakOnAppLaunch();
+        await ProgressService.scheduleMidnightCheck();
+      }
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => MyApp()),
+        );
+      }
+    } catch (e) {
+      print('Error during notification initialization: $e');
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => MyApp()),
+        );
       }
     }
+  }
 
-    // Continue with non-notification features
-    await Future.wait([
-      NotificationSettings.loadSettings(prefs),
-      ProgressService.updateStreakOnAppLaunch(),
-      ProgressService.scheduleMidnightCheck(),
-    ]);
-
-  } catch (e) {
-    print('Error in initialization: $e');
-    // Only throw if critical feature fails
-    if (!e.toString().contains('notification')) {
-      throw e;
-    }
+  @override
+  Widget build(BuildContext context) {
+    return LoadingScreen(); // Keep loading screen visible during initialization
   }
 }
 
