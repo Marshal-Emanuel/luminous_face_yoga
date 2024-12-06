@@ -31,11 +31,31 @@ class _AppInitializerState extends State<AppInitializer> {
   }
 
   Future<SharedPreferences> _initialize() async {
-    if (Platform.isIOS) {
-      await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-      await InAppWebViewController.setWebContentsDebuggingEnabled(true);
+    try {
+      if (Platform.isIOS) {
+        try {
+          await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+        } catch (e) {
+          print('Error setting orientation: $e');
+        }
+        
+        try {
+          await InAppWebViewController.setWebContentsDebuggingEnabled(true);
+        } catch (e) {
+          print('Error setting web debug: $e');
+        }
+      }
+      
+      try {
+        return await SharedPreferences.getInstance();
+      } catch (e) {
+        print('Error getting SharedPreferences: $e');
+        throw e; // Re-throw to trigger error UI
+      }
+    } catch (e) {
+      print('Critical initialization error: $e');
+      throw e; // Show error screen
     }
-    return await SharedPreferences.getInstance();
   }
 
   @override
@@ -49,7 +69,26 @@ class _AppInitializerState extends State<AppInitializer> {
             return LoadingScreen();
           } else if (snapshot.hasError) {
             return Scaffold(
-              body: Center(child: Text('Error during initialization')),
+              backgroundColor: Colors.white,
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    SizedBox(height: 16),
+                    Text(
+                      'Initialization Error',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      snapshot.error.toString(),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ],
+                ),
+              ),
             );
           } else {
             return NotificationInitializer(prefs: snapshot.data!);
