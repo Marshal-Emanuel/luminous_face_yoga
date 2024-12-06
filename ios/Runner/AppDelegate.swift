@@ -2,8 +2,8 @@ import Flutter
 import UIKit
 import UserNotifications
 
-@UIApplicationMain
-@objc class AppDelegate: FlutterAppDelegate, UNUserNotificationCenterDelegate {
+@main
+@objc class AppDelegate: FlutterAppDelegate {
     override func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -44,7 +44,6 @@ import UserNotifications
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
     
-    // Handle local notifications when app is in foreground
     override func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
