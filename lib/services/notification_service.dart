@@ -53,88 +53,84 @@ class NotificationService {
   static Future<bool> requestIOSPermissions() async {
     if (!Platform.isIOS) return true;
 
-    // Check if already permitted
-    final existingPermission = await checkExistingPermission();
-    if (existingPermission) {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Get existing permission status first
+    final currentStatus = await AwesomeNotifications().isNotificationAllowed();
+    if (currentStatus) {
+      await prefs.setBool(PERMISSION_STATUS_KEY, true);
       return true;
     }
 
-    // Check cooldown if previously denied
-    final prefs = await SharedPreferences.getInstance();
-    final lastRequest = prefs.getInt(LAST_PERMISSION_REQUEST_KEY) ?? 0;
-    final now = DateTime.now().millisecondsSinceEpoch;
+    // Reset last request time to force new request
+    await prefs.remove(LAST_PERMISSION_REQUEST_KEY);
     
-    if (lastRequest > 0 && 
-        now - lastRequest < Duration(days: PERMISSION_COOLDOWN_DAYS).inMilliseconds) {
-      return false;
-    }
-
-    // Request permissions
-    final permissionStatus = 
-        await AwesomeNotifications().requestPermissionToSendNotifications();
-    
-    // Store results
+    final permissionStatus = await AwesomeNotifications().requestPermissionToSendNotifications();
     await prefs.setBool(PERMISSION_STATUS_KEY, permissionStatus);
-    await prefs.setInt(LAST_PERMISSION_REQUEST_KEY, now);
-
+    
     return permissionStatus;
   }
 
   static Future<void> initNotifications() async {
-    final initialized = await AwesomeNotifications().initialize(
-      null, // Default icon for notifications
-      [
-        NotificationChannel(
-          channelKey: DAILY_CHANNEL,
-          channelName: 'Daily Reminders',
-          channelDescription: 'Channel for daily reminders',
-          defaultColor: Color(0xFF66D7D1),
-          ledColor: Color(0xFF465A72),
-          importance: NotificationImportance.High,
-          defaultPrivacy: NotificationPrivacy.Private,
-          defaultRingtoneType: DefaultRingtoneType.Notification,
-          criticalAlerts: true,
-        ),
-        NotificationChannel(
-          channelKey: EVENING_CHANNEL,
-          channelName: 'Evening Tips',
-          channelDescription: 'Channel for evening tips',
-          defaultColor: Color(0xFF66D7D1),
-          ledColor: Color(0xFF465A72),
-          importance: NotificationImportance.Default,
-          defaultPrivacy: NotificationPrivacy.Private,
-          defaultRingtoneType: DefaultRingtoneType.Notification,
-          criticalAlerts: true,
-        ),
-        NotificationChannel(
-          channelKey: ACHIEVEMENT_CHANNEL,
-          channelName: 'Achievements',
-          channelDescription: 'Channel for achievements',
-          defaultColor: Color(0xFF66D7D1),
-          ledColor: Color(0xFF465A72),
-          importance: NotificationImportance.High,
-        ),
-        NotificationChannel(
-          channelKey: SCHEDULED_CHANNEL,
-          channelName: 'Scheduled Notifications',
-          channelDescription: 'Channel for scheduled notifications',
-          defaultColor: Color(0xFF66D7D1),
-          ledColor: Color(0xFF465A72),
-          importance: NotificationImportance.Default,
-        ),
-        NotificationChannel(
-          channelKey: STREAK_CHANNEL,
-          channelName: 'Streak Notifications',
-          channelDescription: 'Channel for streak updates',
-          defaultColor: Color(0xFF66D7D1),
-          ledColor: Color(0xFF465A72),
-          importance: NotificationImportance.High,
-        ),
-      ],
-    );
+    try {
+      final initialized = await AwesomeNotifications().initialize(
+        null, // Default icon for notifications
+        [
+          NotificationChannel(
+            channelKey: DAILY_CHANNEL,
+            channelName: 'Daily Reminders',
+            channelDescription: 'Channel for daily reminders',
+            defaultColor: Color(0xFF66D7D1),
+            ledColor: Color(0xFF465A72),
+            importance: NotificationImportance.High,
+            defaultPrivacy: NotificationPrivacy.Private,
+            defaultRingtoneType: DefaultRingtoneType.Notification,
+            criticalAlerts: true,
+          ),
+          NotificationChannel(
+            channelKey: EVENING_CHANNEL,
+            channelName: 'Evening Tips',
+            channelDescription: 'Channel for evening tips',
+            defaultColor: Color(0xFF66D7D1),
+            ledColor: Color(0xFF465A72),
+            importance: NotificationImportance.Default,
+            defaultPrivacy: NotificationPrivacy.Private,
+            defaultRingtoneType: DefaultRingtoneType.Notification,
+            criticalAlerts: true,
+          ),
+          NotificationChannel(
+            channelKey: ACHIEVEMENT_CHANNEL,
+            channelName: 'Achievements',
+            channelDescription: 'Channel for achievements',
+            defaultColor: Color(0xFF66D7D1),
+            ledColor: Color(0xFF465A72),
+            importance: NotificationImportance.High,
+          ),
+          NotificationChannel(
+            channelKey: SCHEDULED_CHANNEL,
+            channelName: 'Scheduled Notifications',
+            channelDescription: 'Channel for scheduled notifications',
+            defaultColor: Color(0xFF66D7D1),
+            ledColor: Color(0xFF465A72),
+            importance: NotificationImportance.Default,
+          ),
+          NotificationChannel(
+            channelKey: STREAK_CHANNEL,
+            channelName: 'Streak Notifications',
+            channelDescription: 'Channel for streak updates',
+            defaultColor: Color(0xFF66D7D1),
+            ledColor: Color(0xFF465A72),
+            importance: NotificationImportance.High,
+          ),
+        ],
+      );
 
-    if (!initialized) {
-      throw Exception('Notifications initialization failed');
+      if (!initialized) {
+        throw Exception('Notifications initialization failed');
+      }
+    } catch (e) {
+      print('Error initializing notifications: $e');
+      // Handle specific exceptions if necessary
     }
   }
 
@@ -142,14 +138,16 @@ class NotificationService {
     required int hour,
     required int minute,
   }) async {
-    await AwesomeNotifications().cancelSchedule(1);
+    await AwesomeNotifications().cancelSchedule(1); // Ensure the ID matches
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
-        id: 1,
+        id: 1, // Use the same ID consistently
         channelKey: DAILY_CHANNEL,
         title: 'Time for Face Yoga!',
         body: 'Ready for your daily facial exercises?',
         notificationLayout: NotificationLayout.Default,
+        category: NotificationCategory.Reminder,
+        wakeUpScreen: true,
       ),
       schedule: NotificationCalendar(
         hour: hour,
@@ -158,8 +156,10 @@ class NotificationService {
         millisecond: 0,
         repeats: true,
         allowWhileIdle: true,
+        preciseAlarm: true, // Add this for precise scheduling
       ),
     );
+    print('Scheduled daily reminder at $hour:$minute');
   }
 
   static Future<void> sendNotification(String programName, String week, String day) async {

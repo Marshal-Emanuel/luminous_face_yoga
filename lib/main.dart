@@ -117,35 +117,27 @@ class _NotificationInitializerState extends State<NotificationInitializer> {
 
   Future<void> _initializeNotifications() async {
     try {
-      // Request permissions first
-      final notificationsAllowed = await NotificationService.requestIOSPermissions();
-      await widget.prefs.setBool('notifications_enabled', notificationsAllowed);
+      final notificationsAllowed = await NotificationService.requestIOSPermissions()
+          .timeout(Duration(seconds: 5));
+
+      await NotificationService.initNotifications()
+          .timeout(Duration(seconds: 5));
 
       if (notificationsAllowed) {
-        // Initialize channels
-        await NotificationService.initNotifications();
-        
-        // Schedule notifications one by one
-        await NotificationService.scheduleEveningTip();
-        await NotificationService.scheduleDailyReminder(
-          hour: widget.prefs.getInt('notification_hour') ?? 9,
-          minute: widget.prefs.getInt('notification_minute') ?? 0,
-        );
-
-        // Initialize other services sequentially
-        await NotificationSettings.loadSettings(widget.prefs);
-        await ProgressService.updateStreakOnAppLaunch();
-        await ProgressService.scheduleMidnightCheck();
-      }
-
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => MyApp()),
-        );
+        await Future.wait([
+          NotificationService.scheduleEveningTip(),
+          NotificationService.scheduleDailyReminder(
+            hour: widget.prefs.getInt('notification_hour') ?? 9,
+            minute: widget.prefs.getInt('notification_minute') ?? 0,
+          ),
+          NotificationSettings.loadSettings(widget.prefs),
+          ProgressService.updateStreakOnAppLaunch(),
+          ProgressService.scheduleMidnightCheck(),
+        ]).timeout(Duration(seconds: 10));
       }
     } catch (e) {
       print('Error during notification initialization: $e');
+    } finally {
       if (mounted) {
         Navigator.pushReplacement(
           context,

@@ -30,13 +30,13 @@ import UserNotifications
             window?.overrideUserInterfaceStyle = .light
         }
         
-        // Setup local notification delegate
+        // Only set delegate, don't request permissions
         if #available(iOS 10.0, *) {
             UNUserNotificationCenter.current().delegate = self
         }
         
         // Register plugins
-        GeneratedPluginRegistrant.register(with: self)
+        GeneratedPluginRegistrant.register(with: flutterEngine)
         
         // Make window visible
         self.window?.makeKeyAndVisible()
