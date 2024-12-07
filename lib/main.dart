@@ -117,13 +117,11 @@ class _NotificationInitializerState extends State<NotificationInitializer> {
 
   Future<void> _initializeNotifications() async {
     try {
-      final notificationsAllowed = await NotificationService.requestIOSPermissions()
+      final initialized = await NotificationService.initializeNotifications()
           .timeout(Duration(seconds: 5));
 
-      await NotificationService.initNotifications()
-          .timeout(Duration(seconds: 5));
-
-      if (notificationsAllowed) {
+      if (initialized) {
+        // Only schedule notifications if initialization was successful
         await Future.wait([
           NotificationService.scheduleEveningTip(),
           NotificationService.scheduleDailyReminder(

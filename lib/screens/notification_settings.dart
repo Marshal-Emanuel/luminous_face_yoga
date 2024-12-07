@@ -33,31 +33,34 @@ class _NotificationSettingsState extends State<NotificationSettings> {
         minute: prefs.getInt('notification_minute') ?? 0,
       );
       dailyReminders = prefs.getBool('daily_reminders') ?? true;
-      achievementNotifications =
-          prefs.getBool('achievement_notifications') ?? true;
+      achievementNotifications = prefs.getBool('achievement_notifications') ?? true;
       tipsNotifications = prefs.getBool('tips_notifications') ?? true;
     });
   }
 
   Future<void> saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('notification_hour', selectedTime.hour);
-    await prefs.setInt('notification_minute', selectedTime.minute);
-    await prefs.setBool('daily_reminders', dailyReminders);
-    await prefs.setBool('achievement_notifications', achievementNotifications);
-    await prefs.setBool('tips_notifications', tipsNotifications);
+    
+    // Check if notifications are initialized before scheduling
+    if (await NotificationService.isInitialized()) {
+      await prefs.setInt('notification_hour', selectedTime.hour);
+      await prefs.setInt('notification_minute', selectedTime.minute);
+      await prefs.setBool('daily_reminders', dailyReminders);
+      await prefs.setBool('achievement_notifications', achievementNotifications);
+      await prefs.setBool('tips_notifications', tipsNotifications);
 
-    if (dailyReminders) {
-      await NotificationService.scheduleDailyReminder(
-        hour: selectedTime.hour,
-        minute: selectedTime.minute,
-      );
-    } else {
-      await NotificationService.cancelAllNotifications();
-    }
+      if (dailyReminders) {
+        await NotificationService.scheduleDailyReminder(
+          hour: selectedTime.hour,
+          minute: selectedTime.minute,
+        );
+      } else {
+        await NotificationService.cancelAllNotifications();
+      }
 
-    if (tipsNotifications) {
-      await NotificationService.scheduleEveningTip();
+      if (tipsNotifications) {
+        await NotificationService.scheduleEveningTip();
+      }
     }
   }
 
@@ -131,8 +134,7 @@ class _NotificationSettingsState extends State<NotificationSettings> {
                           initialTime: selectedTime,
                           builder: (context, child) {
                             return Theme(
-                              data: ThemeData.light()
-                                  .copyWith(primaryColor: Color(0xFFE99C83)),
+                              data: ThemeData.light().copyWith(primaryColor: Color(0xFFE99C83)),
                               child: child!,
                             );
                           },
@@ -144,11 +146,14 @@ class _NotificationSettingsState extends State<NotificationSettings> {
                           await saveSettings();
                         }
                       },
-                      child: Text('${selectedTime.format(context)}',
-                          style: TextStyle(
-                              color: Color(0xFF66D7D1),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600)),
+                      child: Text(
+                        '${selectedTime.format(context)}',
+                        style: TextStyle(
+                          color: Color(0xFF66D7D1),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -158,22 +163,28 @@ class _NotificationSettingsState extends State<NotificationSettings> {
             Text(
               'Other Notifications',
               style: TextStyle(
-                  color: Color(0xFF18314F),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold),
+                color: Color(0xFF18314F),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             SizedBox(height: 16),
             Container(
               decoration: BoxDecoration(
-                  color: Color(0xFFF6D7CD).withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(12)),
+                color: Color(0xFFF6D7CD).withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
+              ),
               padding: EdgeInsets.all(16),
               child: Column(
                 children: [
                   SwitchListTile(
-                    title: Text('Achievement Celebrations',
-                        style:
-                            TextStyle(color: Color(0xFF3C3C3B), fontSize: 16)),
+                    title: Text(
+                      'Achievement Celebrations',
+                      style: TextStyle(
+                        color: Color(0xFF3C3C3B),
+                        fontSize: 16,
+                      ),
+                    ),
                     value: achievementNotifications,
                     activeColor: Color(0xFF66D7D1),
                     onChanged: (bool value) async {
@@ -184,17 +195,22 @@ class _NotificationSettingsState extends State<NotificationSettings> {
                     },
                   ),
                   SwitchListTile(
-                      title: Text('Tips & Motivation',
-                          style: TextStyle(
-                              color: Color(0xFF3C3C3B), fontSize: 16)),
-                      value: tipsNotifications,
-                      activeColor: Color(0xFF66D7D1),
-                      onChanged: (bool value) async {
-                        setState(() {
-                          tipsNotifications = value;
-                        });
-                        await saveSettings();
-                      }),
+                    title: Text(
+                      'Tips & Motivation',
+                      style: TextStyle(
+                        color: Color(0xFF3C3C3B),
+                        fontSize: 16,
+                      ),
+                    ),
+                    value: tipsNotifications,
+                    activeColor: Color(0xFF66D7D1),
+                    onChanged: (bool value) async {
+                      setState(() {
+                        tipsNotifications = value;
+                      });
+                      await saveSettings();
+                    },
+                  ),
                 ],
               ),
             ),

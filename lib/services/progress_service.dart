@@ -1,7 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/timezone.dart' as tz;
+import 'package:awesome_notifications/awesome_notifications.dart';
 import '../models/achievement_data.dart';
 import 'notification_service.dart';
 
@@ -233,30 +232,25 @@ class ProgressService {
   }
 
   static Future<void> scheduleMidnightCheck() async {
-    final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    // Cancel any existing scheduled notifications with the same ID
+    await AwesomeNotifications().cancelSchedule(0);
 
-    const androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'midnight_check_channel', // channelId
-      'Midnight Check', // channelName
-      channelDescription: 'Channel for checking streak at midnight',
-      importance: Importance.max,
-      priority: Priority.high,
-      showWhen: false,
-    );
-
-    const NotificationDetails platformChannelSpecifics =
-        NotificationDetails(android: androidPlatformChannelSpecifics);
-
-    await flutterLocalNotificationsPlugin.zonedSchedule(
-      0,
-      'Welcome Back!',
-      'Check your progress and keep glowing.',
-      tz.TZDateTime.now(tz.local).add(const Duration(seconds: 5)),
-      platformChannelSpecifics,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
+    await AwesomeNotifications().createNotification(
+      content: NotificationContent(
+        id: 0, // Unique notification ID
+        channelKey: NotificationService.STREAK_CHANNEL, // Use appropriate channel key
+        title: 'Welcome Back!',
+        body: 'Check your progress and keep glowing.',
+        notificationLayout: NotificationLayout.Default,
+      ),
+      schedule: NotificationCalendar(
+        hour: 0,
+        minute: 0,
+        second: 0,
+        repeats: true,
+        allowWhileIdle: true,
+        preciseAlarm: true,
+      ),
     );
   }
 

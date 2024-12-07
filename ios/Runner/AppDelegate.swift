@@ -33,6 +33,7 @@ import UserNotifications
         // Only set delegate, don't request permissions
         if #available(iOS 10.0, *) {
             UNUserNotificationCenter.current().delegate = self
+            // Don't request permissions here - let Flutter handle it
         }
         
         // Register plugins

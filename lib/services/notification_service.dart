@@ -1,8 +1,6 @@
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
-
 import 'dart:io';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationService {
@@ -71,15 +69,41 @@ class NotificationService {
     return permissionStatus;
   }
 
-  static Future<void> initNotifications() async {
+  static bool _initialized = false;
+  
+  static Future<bool> initializeNotifications() async {
+    if (_initialized) return true;
+
     try {
-      final initialized = await AwesomeNotifications().initialize(
-        null, // Default icon for notifications
+      // First check/request permissions
+      final permissionGranted = await requestIOSPermissions();
+      if (!permissionGranted) {
+        return false;
+      }
+
+      // Then initialize channels
+      final initialized = await initNotifications();
+      _initialized = initialized;
+      return initialized;
+    } catch (e) {
+      print('Error initializing notifications: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> isInitialized() async {
+    return _initialized;
+  }
+
+  static Future<bool> initNotifications() async {
+    try {
+      await AwesomeNotifications().initialize(
+        null,
         [
           NotificationChannel(
             channelKey: DAILY_CHANNEL,
             channelName: 'Daily Reminders',
-            channelDescription: 'Channel for daily reminders',
+            channelDescription: 'Notification channel for daily reminders',
             defaultColor: Color(0xFF66D7D1),
             ledColor: Color(0xFF465A72),
             importance: NotificationImportance.High,
@@ -90,7 +114,7 @@ class NotificationService {
           NotificationChannel(
             channelKey: EVENING_CHANNEL,
             channelName: 'Evening Tips',
-            channelDescription: 'Channel for evening tips',
+            channelDescription: 'Notification channel for evening tips',
             defaultColor: Color(0xFF66D7D1),
             ledColor: Color(0xFF465A72),
             importance: NotificationImportance.Default,
@@ -101,7 +125,7 @@ class NotificationService {
           NotificationChannel(
             channelKey: ACHIEVEMENT_CHANNEL,
             channelName: 'Achievements',
-            channelDescription: 'Channel for achievements',
+            channelDescription: 'Notification channel for achievements',
             defaultColor: Color(0xFF66D7D1),
             ledColor: Color(0xFF465A72),
             importance: NotificationImportance.High,
@@ -109,7 +133,7 @@ class NotificationService {
           NotificationChannel(
             channelKey: SCHEDULED_CHANNEL,
             channelName: 'Scheduled Notifications',
-            channelDescription: 'Channel for scheduled notifications',
+            channelDescription: 'Notification channel for scheduled notifications',
             defaultColor: Color(0xFF66D7D1),
             ledColor: Color(0xFF465A72),
             importance: NotificationImportance.Default,
@@ -117,7 +141,7 @@ class NotificationService {
           NotificationChannel(
             channelKey: STREAK_CHANNEL,
             channelName: 'Streak Notifications',
-            channelDescription: 'Channel for streak updates',
+            channelDescription: 'Notification channel for streak updates',
             defaultColor: Color(0xFF66D7D1),
             ledColor: Color(0xFF465A72),
             importance: NotificationImportance.High,
@@ -125,12 +149,10 @@ class NotificationService {
         ],
       );
 
-      if (!initialized) {
-        throw Exception('Notifications initialization failed');
-      }
+      return true; // Return true if initialization succeeds
     } catch (e) {
       print('Error initializing notifications: $e');
-      // Handle specific exceptions if necessary
+      return false;
     }
   }
 
@@ -138,6 +160,9 @@ class NotificationService {
     required int hour,
     required int minute,
   }) async {
+    if (!await isInitialized()) {
+      throw Exception('Notifications not initialized');
+    }
     await AwesomeNotifications().cancelSchedule(1); // Ensure the ID matches
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
