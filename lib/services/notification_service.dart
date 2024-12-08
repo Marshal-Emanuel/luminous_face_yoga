@@ -47,41 +47,54 @@ class NotificationService {
     return prefs.getBool(PERMISSION_STATUS_KEY) ?? false;
   }
 
-  // Modify existing requestIOSPermissions
+  // Ensure `requestIOSPermissions` avoids repeated permission requests
   static Future<bool> requestIOSPermissions() async {
     if (!Platform.isIOS) return true;
 
     final prefs = await SharedPreferences.getInstance();
-    
-    // Get existing permission status first
+
+    // Check existing permission status
     final currentStatus = await AwesomeNotifications().isNotificationAllowed();
     if (currentStatus) {
       await prefs.setBool(PERMISSION_STATUS_KEY, true);
       return true;
     }
 
-    // Reset last request time to force new request
-    await prefs.remove(LAST_PERMISSION_REQUEST_KEY);
-    
+    // Request permissions only if not granted and not recently requested
+    final lastRequestTimestamp = prefs.getInt(LAST_PERMISSION_REQUEST_KEY) ?? 0;
+    final lastRequestDate = DateTime.fromMillisecondsSinceEpoch(lastRequestTimestamp);
+    final now = DateTime.now();
+
+    if (now.difference(lastRequestDate).inDays < PERMISSION_COOLDOWN_DAYS) {
+      // Do not request permission again yet
+      return false;
+    }
+
+    // Update the last request time
+    await prefs.setInt(LAST_PERMISSION_REQUEST_KEY, now.millisecondsSinceEpoch);
+
+    // Request permissions
     final permissionStatus = await AwesomeNotifications().requestPermissionToSendNotifications();
     await prefs.setBool(PERMISSION_STATUS_KEY, permissionStatus);
-    
+
     return permissionStatus;
   }
 
   static bool _initialized = false;
   
+  // Modify the `initializeNotifications` method
   static Future<bool> initializeNotifications() async {
     if (_initialized) return true;
 
     try {
-      // First check/request permissions
+      // Request permissions explicitly before initializing channels
       final permissionGranted = await requestIOSPermissions();
       if (!permissionGranted) {
-        return false;
+        print('User denied notification permissions');
+        return false; // Exit early if permissions are not granted
       }
 
-      // Then initialize channels
+      // Initialize notification channels after permissions are granted
       final initialized = await initNotifications();
       _initialized = initialized;
       return initialized;

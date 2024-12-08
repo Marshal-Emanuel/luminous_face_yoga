@@ -109,19 +109,31 @@ class NotificationInitializer extends StatefulWidget {
 }
 
 class _NotificationInitializerState extends State<NotificationInitializer> {
+  bool _hasInitialized = false;
+
   @override
-  void initState() {
-    super.initState();
-    _initializeNotifications();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitialized) {
+      _hasInitialized = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _initializeNotifications();
+      });
+    }
   }
 
   Future<void> _initializeNotifications() async {
     try {
-      final initialized = await NotificationService.initializeNotifications()
-          .timeout(Duration(seconds: 5));
+      // Call `requestIOSPermissions` explicitly before initializing notifications
+      final permissionGranted = await NotificationService.requestIOSPermissions();
+      if (!permissionGranted) {
+        print("User denied notification permissions or cooldown active");
+        return; // Exit early if permissions are not granted
+      }
 
+      final initialized = await NotificationService.initializeNotifications();
       if (initialized) {
-        // Only schedule notifications if initialization was successful
+        // Proceed with scheduling notifications
         await Future.wait([
           NotificationService.scheduleEveningTip(),
           NotificationService.scheduleDailyReminder(
@@ -131,7 +143,7 @@ class _NotificationInitializerState extends State<NotificationInitializer> {
           NotificationSettings.loadSettings(widget.prefs),
           ProgressService.updateStreakOnAppLaunch(),
           ProgressService.scheduleMidnightCheck(),
-        ]).timeout(Duration(seconds: 10));
+        ]);
       }
     } catch (e) {
       print('Error during notification initialization: $e');
