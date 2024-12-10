@@ -65,17 +65,7 @@ class NotificationService {
     if (_initialized) return true;
     
     try {
-      // For iOS, request permissions first
-      if (Platform.isIOS) {
-        final isAllowed = await requestIOSPermissions();
-        if (!isAllowed) {
-          print('iOS notification permissions not granted');
-          return false;
-        }
-      }
-
-      await AwesomeNotifications().cancelAll();
-      
+      // Initialize channels first
       final initialized = await AwesomeNotifications().initialize(
         null,
         [
@@ -122,10 +112,20 @@ class NotificationService {
       );
 
       if (!initialized) {
-        print('Failed to initialize notifications');
+        print('Failed to initialize notification channels');
         return false;
       }
 
+      // Then request permissions for iOS
+      if (Platform.isIOS) {
+        final isAllowed = await requestIOSPermissions();
+        if (!isAllowed) {
+          print('iOS notification permissions not granted');
+          return false;
+        }
+      }
+
+      await AwesomeNotifications().cancelAll();
       _initialized = true;
       return true;
     } catch (e) {
@@ -288,3 +288,4 @@ class NotificationService {
     }
   }
 }
+
