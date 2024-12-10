@@ -2,7 +2,7 @@ import UIKit
 import Flutter
 import awesome_notifications
 import UserNotifications
-import flutter_inappwebview
+import AwesomeNotifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
