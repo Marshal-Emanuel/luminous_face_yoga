@@ -60,9 +60,13 @@ class NotificationService {
   }
 
   static Future<bool> initializeNotifications() async {
-    if (_initialized) return true;
+    if (_initialized) {
+      print('Notifications already initialized');
+      return true;
+    }
     
     try {
+      print('Starting notification initialization...');
       // Initialize channels first
       final initialized = await AwesomeNotifications().initialize(
         null,
@@ -110,20 +114,25 @@ class NotificationService {
         print('Failed to initialize notification channels');
         return false;
       }
+      print('Notification channels initialized successfully');
 
       // Clean up any existing notifications
       await AwesomeNotifications().cancelAll();
+      print('Cleared existing notifications');
 
       // Request permissions for iOS
       if (Platform.isIOS) {
+        print('Requesting iOS permissions...');
         final isAllowed = await requestIOSPermissions();
         if (!isAllowed) {
           print('iOS notification permissions not granted');
           return false;
         }
+        print('iOS permissions granted successfully');
       }
 
       _initialized = true;
+      print('Notification initialization completed successfully');
       return true;
     } catch (e) {
       print('Error initializing notifications: $e');
@@ -163,24 +172,49 @@ class NotificationService {
     required int hour,
     required int minute,
   }) async {
-    await AwesomeNotifications().cancel(1);
-    await AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: 1,
-        channelKey: 'scheduled_channel',
-        title: 'Time for Face Yoga!',
-        body: 'Ready for your daily facial exercises?',
-        notificationLayout: NotificationLayout.Default,
-      ),
-      schedule: NotificationCalendar(
-        hour: hour,
-        minute: minute,
-        second: 0,
-        millisecond: 0,
-        repeats: true,
-        allowWhileIdle: true,
-      ),
-    );
+    try {
+      print('Scheduling daily reminder for $hour:$minute');
+      await AwesomeNotifications().cancel(1);
+      
+      final now = DateTime.now();
+      final scheduledDate = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        hour,
+        minute,
+      );
+      
+      // If the time has passed for today, schedule for tomorrow
+      final finalDate = scheduledDate.isBefore(now) 
+          ? scheduledDate.add(Duration(days: 1))
+          : scheduledDate;
+      
+      print('Scheduling notification for: ${finalDate.toString()}');
+      
+      await AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: 1,
+          channelKey: 'scheduled_channel',
+          title: 'Time for Face Yoga!',
+          body: 'Ready for your daily facial exercises?',
+          notificationLayout: NotificationLayout.Default,
+          wakeUpScreen: true,
+        ),
+        schedule: NotificationCalendar(
+          hour: hour,
+          minute: minute,
+          second: 0,
+          millisecond: 0,
+          repeats: true,
+          allowWhileIdle: true,
+          preciseAlarm: true,
+        ),
+      );
+      print('Daily reminder scheduled successfully');
+    } catch (e) {
+      print('Error scheduling daily reminder: $e');
+    }
   }
 
   static Future<void> sendNotification(String programName, String week, String day) async {
@@ -197,21 +231,31 @@ class NotificationService {
   }
 
   static Future<void> scheduleEveningTip() async {
-    final tipIndex = DateTime.now().day % eveningTips.length;
-    await AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: 2,
-        channelKey: 'scheduled_channel',
-        title: 'Face Yoga Tip',
-        body: eveningTips[tipIndex],
-        notificationLayout: NotificationLayout.Default,
-      ),
-      schedule: NotificationCalendar(
-        hour: 20,
-        minute: 0,
-        repeats: false,
-      ),
-    );
+    try {
+      print('Scheduling evening tip...');
+      final tipIndex = DateTime.now().day % eveningTips.length;
+      await AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: 2,
+          channelKey: 'scheduled_channel',
+          title: 'Face Yoga Tip',
+          body: eveningTips[tipIndex],
+          notificationLayout: NotificationLayout.Default,
+          wakeUpScreen: true,
+        ),
+        schedule: NotificationCalendar(
+          hour: 20,
+          minute: 0,
+          second: 0,
+          repeats: true,
+          allowWhileIdle: true,
+          preciseAlarm: true,
+        ),
+      );
+      print('Evening tip scheduled successfully');
+    } catch (e) {
+      print('Error scheduling evening tip: $e');
+    }
   }
 
   static Future<void> sendQuizCompletionNotification() async {
@@ -267,21 +311,70 @@ class NotificationService {
   }
 
   static Future<void> scheduleNotifications(SharedPreferences prefs) async {
-    if (!_initialized) return;
+    if (!_initialized) {
+      print('Cannot schedule notifications - not initialized');
+      return;
+    }
 
     try {
+      print('Starting to schedule notifications...');
       if (prefs.getBool('daily_reminders') ?? true) {
+        final hour = prefs.getInt('notification_hour') ?? 9;
+        final minute = prefs.getInt('notification_minute') ?? 0;
+        print('Scheduling daily reminder for $hour:$minute');
         await scheduleDailyReminder(
-          hour: prefs.getInt('notification_hour') ?? 9,
-          minute: prefs.getInt('notification_minute') ?? 0,
+          hour: hour,
+          minute: minute,
         );
+      } else {
+        print('Daily reminders are disabled');
       }
 
       if (prefs.getBool('tips_notifications') ?? true) {
+        print('Scheduling evening tip');
         await scheduleEveningTip();
+      } else {
+        print('Tips notifications are disabled');
       }
+      print('All notifications scheduled successfully');
     } catch (e) {
       print('Error scheduling notifications: $e');
+    }
+  }
+
+  static Future<bool> sendTestNotification() async {
+    try {
+      print('Sending test notification...');
+      final now = DateTime.now();
+      final testTime = now.add(Duration(seconds: 5));
+      
+      await AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: 999,
+          channelKey: 'basic_channel',
+          title: 'Test Notification',
+          body: 'If you see this, notifications are working!',
+          notificationLayout: NotificationLayout.Default,
+          wakeUpScreen: true,
+        ),
+        schedule: NotificationCalendar(
+          year: testTime.year,
+          month: testTime.month,
+          day: testTime.day,
+          hour: testTime.hour,
+          minute: testTime.minute,
+          second: testTime.second,
+          millisecond: 0,
+          repeats: false,
+          allowWhileIdle: true,
+          preciseAlarm: true,
+        ),
+      );
+      print('Test notification scheduled for: ${testTime.toString()}');
+      return true;
+    } catch (e) {
+      print('Error sending test notification: $e');
+      return false;
     }
   }
 }

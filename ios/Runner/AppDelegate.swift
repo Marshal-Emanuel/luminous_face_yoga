@@ -12,9 +12,26 @@ import UserNotifications
         // Register plugins first
         GeneratedPluginRegistrant.register(with: self)
         
-        // Set UNUserNotificationCenter delegate first
-        if #available(iOS 10.0, *) {
-            UNUserNotificationCenter.current().delegate = self
+        // Set UNUserNotificationCenter delegate
+        UNUserNotificationCenter.current().delegate = self
+        
+        // Check current permission status
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            print("Notification permission status: \(settings.authorizationStatus.rawValue)")
+        }
+        
+        // Request notification permissions
+        UNUserNotificationCenter.current().requestAuthorization(
+            options: [.alert, .badge, .sound]
+        ) { granted, error in
+            if granted {
+                print("Notification permission granted")
+                DispatchQueue.main.async {
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
+            } else if let error = error {
+                print("Notification permission error: \(error)")
+            }
         }
         
         // Initialize the root view controller immediately
@@ -41,7 +58,11 @@ import UserNotifications
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        completionHandler([.alert, .badge, .sound])
+        if #available(iOS 14.0, *) {
+            completionHandler([.banner, .badge, .sound])
+        } else {
+            completionHandler([.alert, .badge, .sound])
+        }
     }
     
     override func userNotificationCenter(
@@ -49,11 +70,8 @@ import UserNotifications
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
+        // Handle notification tap
+        print("Notification tapped: \(response.notification.request.identifier)")
         completionHandler()
-    }
-    
-    override func applicationDidBecomeActive(_ application: UIApplication) {
-        super.applicationDidBecomeActive(application)
-        application.applicationIconBadgeNumber = 0
     }
 }

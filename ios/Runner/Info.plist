@@ -45,12 +45,9 @@
 	<true/>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>We need permission to send you reminders and tips to help maintain your face yoga practice.</string>
-	<key>NSCriticalAlertsUsageDescription</key>
-	<string>We need permission to send you important reminders for your face yoga practice.</string>
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>fetch</string>
-		<string>remote-notification</string>
+		<string>processing</string>
 	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
@@ -67,8 +64,6 @@
 	<true/>
 	<key>UIFileSharingEnabled</key>
 	<true/>
-	<key>NSProcessInfoPowerStateDidChangeNotification</key>
-	<true/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>UIRequiresFullScreen</key>
@@ -82,7 +77,5 @@
 	<array>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	</array>
-	<key>UIRequiresPersistentWiFi</key>
-	<true/>
 </dict>
 </plist>
