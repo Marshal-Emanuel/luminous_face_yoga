@@ -70,18 +70,8 @@ class NotificationService {
     try {
       print('Starting notification initialization...');
       
-      // For iOS, request permissions first
-      if (Platform.isIOS) {
-        print('Requesting iOS permissions...');
-        final isAllowed = await requestIOSPermissions();
-        if (!isAllowed) {
-          print('iOS notification permissions not granted');
-          return false;
-        }
-        print('iOS permissions granted successfully');
-      }
-      
-      // Then initialize channels
+      // First initialize channels without checking permissions
+      print('Initializing notification channels...');
       final initialized = await AwesomeNotifications().initialize(
         null,
         [
@@ -91,10 +81,10 @@ class NotificationService {
             channelDescription: 'Notification channel for basic tests',
             defaultColor: const Color(0xFF66D7D1),
             ledColor: const Color(0xFF465A72),
-            importance: NotificationImportance.High,
+            importance: NotificationImportance.Max,
             playSound: true,
             enableVibration: true,
-            defaultPrivacy: NotificationPrivacy.Private,
+            defaultPrivacy: NotificationPrivacy.Public,
             onlyAlertOnce: false,
           ),
           NotificationChannel(
@@ -103,10 +93,10 @@ class NotificationService {
             channelDescription: 'Channel for scheduled reminders and tips',
             defaultColor: const Color(0xFF66D7D1),
             ledColor: const Color(0xFF465A72),
-            importance: NotificationImportance.High,
+            importance: NotificationImportance.Max,
             playSound: true,
             enableVibration: true,
-            defaultPrivacy: NotificationPrivacy.Private,
+            defaultPrivacy: NotificationPrivacy.Public,
             onlyAlertOnce: false,
           ),
           NotificationChannel(
@@ -115,10 +105,10 @@ class NotificationService {
             channelDescription: 'Channel for achievement notifications',
             defaultColor: const Color(0xFF66D7D1),
             ledColor: const Color(0xFF465A72),
-            importance: NotificationImportance.High,
+            importance: NotificationImportance.Max,
             playSound: true,
             enableVibration: true,
-            defaultPrivacy: NotificationPrivacy.Private,
+            defaultPrivacy: NotificationPrivacy.Public,
             onlyAlertOnce: false,
           ),
         ],
@@ -130,26 +120,35 @@ class NotificationService {
       }
       print('Notification channels initialized successfully');
 
-      // Clean up any existing notifications
-      await AwesomeNotifications().cancelAll();
-      print('Cleared existing notifications');
-
-      // Verify initialization
-      final isAllowed = await AwesomeNotifications().isNotificationAllowed();
-      if (!isAllowed) {
-        print('Notifications not allowed after initialization');
+      // Now that channels are initialized, request permissions
+      print('Requesting notification permissions...');
+      final permissionGranted = await AwesomeNotifications().requestPermissionToSendNotifications();
+      
+      if (!permissionGranted) {
+        print('Notification permissions denied');
         return false;
       }
+      print('Notification permissions granted');
 
+      // Only set initialized and send test notification if both steps succeeded
       _initialized = true;
       print('Notification initialization completed successfully');
-      
-      // Send a test notification after 5 seconds
-      await sendTestNotification();
-      
+
+      // Send test notification
+      await AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: 1,
+          channelKey: 'basic_channel',
+          title: 'Notification Test',
+          body: 'Notifications are working!',
+          notificationLayout: NotificationLayout.Default,
+        )
+      );
+      print('Test notification sent');
+
       return true;
     } catch (e) {
-      print('Error initializing notifications: $e');
+      print('Error during notification initialization: $e');
       return false;
     }
   }
@@ -187,24 +186,7 @@ class NotificationService {
     required int minute,
   }) async {
     try {
-      print('Scheduling daily reminder for $hour:$minute');
       await AwesomeNotifications().cancel(1);
-      
-      final now = DateTime.now();
-      final scheduledDate = DateTime(
-        now.year,
-        now.month,
-        now.day,
-        hour,
-        minute,
-      );
-      
-      // If the time has passed for today, schedule for tomorrow
-      final finalDate = scheduledDate.isBefore(now) 
-          ? scheduledDate.add(Duration(days: 1))
-          : scheduledDate;
-      
-      print('Scheduling notification for: ${finalDate.toString()}');
       
       await AwesomeNotifications().createNotification(
         content: NotificationContent(
@@ -225,9 +207,8 @@ class NotificationService {
           preciseAlarm: true,
         ),
       );
-      print('Daily reminder scheduled successfully');
     } catch (e) {
-      print('Error scheduling daily reminder: $e');
+      // Handle error silently
     }
   }
 
