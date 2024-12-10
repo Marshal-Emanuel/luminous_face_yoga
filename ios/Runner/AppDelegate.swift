@@ -1,7 +1,6 @@
 import UIKit
 import Flutter
 import awesome_notifications
-import UserNotifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -9,8 +8,7 @@ import UserNotifications
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
-        // Initialize Awesome Notifications
-        SwiftAwesomeNotificationsPlugin.initialize()
+        GeneratedPluginRegistrant.register(with: self)
         
         // Request notification authorization
         if #available(iOS 10.0, *) {
@@ -26,7 +24,6 @@ import UserNotifications
             application.registerUserNotificationSettings(settings)
         }
         
-        GeneratedPluginRegistrant.register(with: self)
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
     
@@ -41,20 +38,6 @@ import UserNotifications
         } else {
             completionHandler([[.alert, .badge, .sound]])
         }
-    }
-    
-    // Handle notification response when user taps notification
-    override func userNotificationCenter(
-        _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse,
-        withCompletionHandler completionHandler: @escaping () -> Void
-    ) {
-        let userInfo = response.notification.request.content.userInfo
-        if let jsonData = try? JSONSerialization.data(withJSONObject: userInfo),
-           let jsonString = String(data: jsonData, encoding: .utf8) {
-            SwiftAwesomeNotificationsPlugin.receiveAction(jsonString)
-        }
-        completionHandler()
     }
     
     override func applicationDidBecomeActive(_ application: UIApplication) {
