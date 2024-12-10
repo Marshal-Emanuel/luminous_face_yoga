@@ -2,7 +2,7 @@ import UIKit
 import Flutter
 import awesome_notifications
 import UserNotifications
-
+import flutter_inappwebview
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -12,6 +12,19 @@ import UserNotifications
     ) -> Bool {
         // Register plugins first
         GeneratedPluginRegistrant.register(with: self)
+        
+        // Configure InAppWebView
+        if let flutterViewController = window?.rootViewController as? FlutterViewController {
+            let channel = FlutterMethodChannel(
+                name: "webview_config",
+                binaryMessenger: flutterViewController.binaryMessenger
+            )
+            channel.setMethodCallHandler { (call, result) in
+                if call.method == "disableWebDebugging" {
+                    result(nil)
+                }
+            }
+        }
         
         // Request notification authorization
         if #available(iOS 10.0, *) {
