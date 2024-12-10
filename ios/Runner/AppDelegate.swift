@@ -41,9 +41,12 @@ import UserNotifications
         print("[AppDelegate] Received notification in foreground: \(notification.request.identifier)")
         
         // Handle different iOS versions
-        if #available(iOS 15.0, *) {
-            // iOS 15.0 and later: Use all modern options
-            completionHandler([.banner, .badge, .sound, .list])
+        if #available(iOS 16.0, *) {
+            // iOS 16 and later
+            completionHandler([.sound, .badge, .banner, .list])
+        } else if #available(iOS 15.0, *) {
+            // iOS 15.x: Only use essential options to ensure delivery
+            completionHandler([.sound, .badge, .list])
         } else if #available(iOS 14.0, *) {
             // iOS 14.0 to 14.x: Use banner style
             if #available(iOS 14.2, *) {
@@ -71,30 +74,11 @@ import UserNotifications
         print("[AppDelegate] Notification tapped: \(response.notification.request.identifier)")
         
         let userInfo = response.notification.request.content.userInfo
-        
-        // Handle the notification tap based on iOS version
-        if #available(iOS 15.0, *) {
-            // iOS 15+ specific handling
-            NotificationCenter.default.post(
-                name: NSNotification.Name("didReceiveNotificationResponse"),
-                object: nil,
-                userInfo: userInfo
-            )
-        } else if #available(iOS 13.0, *) {
-            // iOS 13-14 specific handling
-            NotificationCenter.default.post(
-                name: NSNotification.Name("didReceiveNotificationResponse"),
-                object: nil,
-                userInfo: userInfo
-            )
-        } else {
-            // iOS 12 handling
-            NotificationCenter.default.post(
-                name: NSNotification.Name("didReceiveNotificationResponse"),
-                object: nil,
-                userInfo: userInfo
-            )
-        }
+        NotificationCenter.default.post(
+            name: NSNotification.Name("didReceiveNotificationResponse"),
+            object: nil,
+            userInfo: userInfo
+        )
         
         completionHandler()
     }
