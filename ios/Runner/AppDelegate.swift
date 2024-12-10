@@ -13,9 +13,6 @@ import UserNotifications
         // Register plugins first
         GeneratedPluginRegistrant.register(with: self)
         
-        // Configure InAppWebView
-        InAppWebViewOptions.webView.isInspectable = false
-        
         // Request notification authorization
         if #available(iOS 10.0, *) {
             UNUserNotificationCenter.current().delegate = self
