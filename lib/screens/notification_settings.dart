@@ -22,7 +22,8 @@ class _NotificationSettingsState extends State<NotificationSettings> {
   @override
   void initState() {
     super.initState();
-    loadSettings(); // Load settings when the widget is initialized
+    selectedTime = TimeOfDay(hour: 9, minute: 0); // Set default time
+    loadSettings();
   }
 
   Future<void> loadSettings() async {
@@ -41,26 +42,21 @@ class _NotificationSettingsState extends State<NotificationSettings> {
   Future<void> saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
     
-    // Check if notifications are initialized before scheduling
     if (await NotificationService.isInitialized()) {
+      // Save settings
       await prefs.setInt('notification_hour', selectedTime.hour);
       await prefs.setInt('notification_minute', selectedTime.minute);
       await prefs.setBool('daily_reminders', dailyReminders);
       await prefs.setBool('achievement_notifications', achievementNotifications);
       await prefs.setBool('tips_notifications', tipsNotifications);
 
-      if (dailyReminders) {
-        await NotificationService.scheduleDailyReminder(
-          hour: selectedTime.hour,
-          minute: selectedTime.minute,
-        );
-      } else {
+      // Cancel existing notifications if reminders are disabled
+      if (!dailyReminders) {
         await NotificationService.cancelAllNotifications();
       }
 
-      if (tipsNotifications) {
-        await NotificationService.scheduleEveningTip();
-      }
+      // Schedule notifications based on new settings
+      await NotificationService.scheduleNotifications(prefs);
     }
   }
 

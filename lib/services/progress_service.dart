@@ -1,15 +1,21 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/achievement_data.dart';
 import 'notification_service.dart';
 
 class ProgressService {
+  // Storage keys
   static const String _achievementsKey = 'achievements';
   static const String _streakKey = 'current_streak';
   static const String _lastActiveDateKey = 'last_active_date';
   static const String _streakDatesKey = 'streak_dates';
   static const String _missedDatesKey = 'missed_dates';
+
+  static const String LAST_STREAK_CHECK_KEY = 'last_streak_check';
+  static const String CURRENT_STREAK_KEY = 'current_streak';
+  static const String HIGHEST_STREAK_KEY = 'highest_streak';
 
   /// Unlocks an achievement by its [achievementId].
   static Future<void> unlockAchievement(String achievementId) async {
@@ -135,7 +141,55 @@ class ProgressService {
 
   /// Updates streak on app launch
   static Future<void> updateStreakOnAppLaunch() async {
-    await updateStreak();
+    print('Processing streak update...');
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Get current streak
+    int currentStreak = prefs.getInt(CURRENT_STREAK_KEY) ?? 0;
+    print('Current streak before update: $currentStreak');
+
+    // Get last check timestamp
+    int lastCheck = prefs.getInt(LAST_STREAK_CHECK_KEY) ?? 
+        DateTime.now().millisecondsSinceEpoch;
+    
+    // Calculate days difference
+    final lastCheckDate = DateTime.fromMillisecondsSinceEpoch(lastCheck);
+    final now = DateTime.now();
+    final difference = now.difference(lastCheckDate).inDays;
+    
+    print('Calendar day difference: $difference');
+
+    if (difference == 0) {
+      // Same day, no action needed
+      return;
+    } else if (difference == 1) {
+      // Next consecutive day
+      currentStreak++;
+      
+      // Update highest streak if needed
+      int highestStreak = prefs.getInt(HIGHEST_STREAK_KEY) ?? 0;
+      if (currentStreak > highestStreak) {
+        await prefs.setInt(HIGHEST_STREAK_KEY, currentStreak);
+      }
+    } else {
+      // Streak broken
+      if (currentStreak > 0) {
+        await NotificationService.sendMissedStreakNotification(currentStreak);
+      }
+      currentStreak = 0;
+    }
+
+    // If it's a first-time user, set streak to 1
+    if (currentStreak == 0 && !prefs.containsKey(CURRENT_STREAK_KEY)) {
+      print('First time user - streak initialized to: 1');
+      currentStreak = 1;
+    }
+
+    // Save updated values
+    await prefs.setInt(CURRENT_STREAK_KEY, currentStreak);
+    await prefs.setInt(LAST_STREAK_CHECK_KEY, now.millisecondsSinceEpoch);
+    
+    print('Streak update completed. Final streak: $currentStreak');
   }
 
   /// Retrieves the current streak.
@@ -232,13 +286,10 @@ class ProgressService {
   }
 
   static Future<void> scheduleMidnightCheck() async {
-    // Cancel any existing scheduled notifications with the same ID
-    await AwesomeNotifications().cancelSchedule(0);
-
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
-        id: 0, // Unique notification ID
-        channelKey: NotificationService.STREAK_CHANNEL, // Use appropriate channel key
+        id: 0,
+        channelKey: 'basic_channel',
         title: 'Welcome Back!',
         body: 'Check your progress and keep glowing.',
         notificationLayout: NotificationLayout.Default,

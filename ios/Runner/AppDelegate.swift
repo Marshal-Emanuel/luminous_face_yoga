@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
 import UserNotifications
+import awesome_notifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -30,11 +31,21 @@ import UserNotifications
             window?.overrideUserInterfaceStyle = .light
         }
         
-        // Only set delegate, don't request permissions
+        // Request notification authorization
         if #available(iOS 10.0, *) {
             UNUserNotificationCenter.current().delegate = self
-            // Don't request permissions here - let Flutter handle it
+            
+            let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound, .criticalAlert]
+            UNUserNotificationCenter.current().requestAuthorization(
+                options: authOptions,
+                completionHandler: { _, _ in }
+            )
+        } else {
+            let settings = UIUserNotificationSettings(types: [.alert, .badge, .sound], categories: nil)
+            application.registerUserNotificationSettings(settings)
         }
+        
+        application.registerForRemoteNotifications()
         
         // Register plugins
         GeneratedPluginRegistrant.register(with: flutterEngine)
@@ -45,12 +56,57 @@ import UserNotifications
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
     
+    // Handle notifications when app is in foreground
     override func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        completionHandler([.alert, .badge, .sound])
+        if #available(iOS 14.0, *) {
+            completionHandler([[.banner, .badge, .sound]])
+        } else {
+            completionHandler([[.alert, .badge, .sound]])
+        }
+    }
+    
+    // Handle notification response when user taps notification
+    override func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let userInfo = response.notification.request.content.userInfo
+        if let jsonData = try? JSONSerialization.data(withJSONObject: userInfo),
+           let jsonString = String(data: jsonData, encoding: .utf8) {
+            AwesomeNotifications.instance.handleNotificationActionReceived(jsonString: jsonString)
+        }
+        completionHandler()
+    }
+    
+    // Handle remote notifications registration
+    override func application(
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        let tokenParts = deviceToken.map { data in String(format: "%02.2hhx", data) }
+        let token = tokenParts.joined()
+        print("Device Token: \(token)")
+    }
+    
+    override func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: Error
+    ) {
+        print("Failed to register for remote notifications: \(error)")
+    }
+    
+    // Handle background fetch
+    override func application(
+        _ application: UIApplication,
+        performFetchWithCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+    ) {
+        // Implement background fetch logic here
+        completionHandler(.newData)
     }
     
     override func applicationWillResignActive(_ application: UIApplication) {
@@ -61,5 +117,13 @@ import UserNotifications
     override func applicationDidBecomeActive(_ application: UIApplication) {
         super.applicationDidBecomeActive(application)
         window?.makeKeyAndVisible()
+        
+        // Reset badge count when app becomes active
+        application.applicationIconBadgeNumber = 0
+    }
+    
+    override func applicationDidEnterBackground(_ application: UIApplication) {
+        super.applicationDidEnterBackground(application)
+        // Perform any background tasks cleanup here
     }
 }

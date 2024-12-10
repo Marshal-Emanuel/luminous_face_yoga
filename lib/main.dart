@@ -10,171 +10,171 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized(); // Ensures plugin services are initialized
+Future<void> main() async {
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    
+    if (Platform.isIOS) {
+      await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      await InAppWebViewController.setWebContentsDebuggingEnabled(true);
+    }
+    
+    runApp(const AppInitializer());
+  } catch (e) {
+    print('Critical error during app initialization: $e');
+    runApp(ErrorApp(error: e.toString()));
+  }
+}
 
-  runApp(AppInitializer());
+class ErrorApp extends StatelessWidget {
+  final String error;
+  
+  const ErrorApp({Key? key, required this.error}) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              const Text(
+                'Critical Error',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                error,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.red),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class AppInitializer extends StatefulWidget {
+  const AppInitializer({Key? key}) : super(key: key);
+  
   @override
   _AppInitializerState createState() => _AppInitializerState();
 }
 
 class _AppInitializerState extends State<AppInitializer> {
-  Future<SharedPreferences>? _initializationFuture;
-
+  late final Future<void> _initFuture;
+  
   @override
   void initState() {
     super.initState();
-    _initializationFuture = _initialize();
+    _initFuture = _initializeApp();
   }
-
-  Future<SharedPreferences> _initialize() async {
+  
+  Future<void> _initializeApp() async {
     try {
-      if (Platform.isIOS) {
-        try {
-          await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-        } catch (e) {
-          print('Error setting orientation: $e');
-        }
-        
-        try {
-          await InAppWebViewController.setWebContentsDebuggingEnabled(true);
-        } catch (e) {
-          print('Error setting web debug: $e');
-        }
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Initialize notifications first
+      final notificationsInitialized = await NotificationService.initializeNotifications();
+      if (!notificationsInitialized) {
+        throw Exception('Failed to initialize notifications');
       }
       
-      try {
-        return await SharedPreferences.getInstance();
-      } catch (e) {
-        print('Error getting SharedPreferences: $e');
-        throw e; // Re-throw to trigger error UI
+      // Handle first launch
+      if (prefs.getBool('first_launch') ?? true) {
+        await _handleFirstLaunch(prefs);
+      }
+      
+      // Initialize other services
+      await Future.wait([
+        ProgressService.updateStreakOnAppLaunch(),
+        ProgressService.scheduleMidnightCheck(),
+      ]);
+      
+      // Schedule notifications after everything is initialized
+      if (notificationsInitialized) {
+        await Future.wait([
+          NotificationService.scheduleEveningTip(),
+          NotificationService.scheduleDailyReminder(
+            hour: prefs.getInt('notification_hour') ?? 9,
+            minute: prefs.getInt('notification_minute') ?? 0,
+          ),
+        ]);
       }
     } catch (e) {
-      print('Critical initialization error: $e');
-      throw e; // Show error screen
+      print('Error during app initialization: $e');
+      rethrow;
     }
+  }
+  
+  Future<void> _handleFirstLaunch(SharedPreferences prefs) async {
+    await prefs.setBool('first_launch', false);
+    await NotificationService.initializeDefaultSettings(prefs);
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: FutureBuilder<SharedPreferences>(
-        future: _initializationFuture,
+      home: FutureBuilder<void>(
+        future: _initFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return LoadingScreen();
-          } else if (snapshot.hasError) {
+          }
+          
+          if (snapshot.hasError) {
             return Scaffold(
               backgroundColor: Colors.white,
               body: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline, size: 48, color: Colors.red),
-                    SizedBox(height: 16),
-                    Text(
+                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const SizedBox(height: 16),
+                    const Text(
                       'Initialization Error',
                       style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       snapshot.error.toString(),
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.red),
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _initFuture = _initializeApp();
+                        });
+                      },
+                      child: const Text('Retry'),
                     ),
                   ],
                 ),
               ),
             );
-          } else {
-            return NotificationInitializer(prefs: snapshot.data!);
           }
+          
+          return const MyApp();
         },
       ),
     );
   }
 }
 
-class NotificationInitializer extends StatefulWidget {
-  final SharedPreferences prefs;
-  
-  const NotificationInitializer({Key? key, required this.prefs}) : super(key: key);
-  
-  @override
-  _NotificationInitializerState createState() => _NotificationInitializerState();
-}
-
-class _NotificationInitializerState extends State<NotificationInitializer> {
-  bool _hasInitialized = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_hasInitialized) {
-      _hasInitialized = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _initializeNotifications();
-      });
-    }
-  }
-
-  Future<void> _initializeNotifications() async {
-    try {
-      // Call `requestIOSPermissions` explicitly before initializing notifications
-      final permissionGranted = await NotificationService.requestIOSPermissions();
-      if (!permissionGranted) {
-        print("User denied notification permissions or cooldown active");
-        return; // Exit early if permissions are not granted
-      }
-
-      final initialized = await NotificationService.initializeNotifications();
-      if (initialized) {
-        // Proceed with scheduling notifications
-        await Future.wait([
-          NotificationService.scheduleEveningTip(),
-          NotificationService.scheduleDailyReminder(
-            hour: widget.prefs.getInt('notification_hour') ?? 9,
-            minute: widget.prefs.getInt('notification_minute') ?? 0,
-          ),
-          NotificationSettings.loadSettings(widget.prefs),
-          ProgressService.updateStreakOnAppLaunch(),
-          ProgressService.scheduleMidnightCheck(),
-        ]);
-      }
-    } catch (e) {
-      print('Error during notification initialization: $e');
-    } finally {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => MyApp()),
-        );
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LoadingScreen(); // Keep loading screen visible during initialization
-  }
-}
-
 class MyApp extends StatelessWidget {
-  // Removed unnecessary 'prefs' parameter since it's not used in build
-
-  // Navigator key (if needed)
-  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    print('Building MyApp...');
     return MaterialApp(
-      navigatorKey: navigatorKey,
-      home: SafeArea(child: WebviewScreen()),
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -183,8 +183,9 @@ class MyApp extends StatelessWidget {
           systemOverlayStyle: SystemUiOverlayStyle.light,
         ),
       ),
+      initialRoute: '/',
       routes: {
-        '/home': (context) => SafeArea(child: WebviewScreen()),
+        '/': (context) => SafeArea(child: WebviewScreen()),
         '/settings': (context) => SafeArea(child: NotificationSettings()),
         '/progress': (context) => SafeArea(child: ProgressScreen()),
       },
