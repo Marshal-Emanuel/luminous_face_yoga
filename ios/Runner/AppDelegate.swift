@@ -2,7 +2,6 @@ import UIKit
 import Flutter
 import awesome_notifications
 import UserNotifications
-import flutter_inappwebview
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -13,31 +12,38 @@ import flutter_inappwebview
         // Register plugins first
         GeneratedPluginRegistrant.register(with: self)
         
-        // Configure InAppWebView
-        if let flutterViewController = window?.rootViewController as? FlutterViewController {
-            let channel = FlutterMethodChannel(
-                name: "webview_config",
-                binaryMessenger: flutterViewController.binaryMessenger
-            )
-            channel.setMethodCallHandler { (call, result) in
-                if call.method == "disableWebDebugging" {
-                    result(nil)
-                }
-            }
-        }
-        
-        // Request notification authorization
+        // Request notification authorization asynchronously
         if #available(iOS 10.0, *) {
             UNUserNotificationCenter.current().delegate = self
             
             let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound, .criticalAlert]
             UNUserNotificationCenter.current().requestAuthorization(
                 options: authOptions,
-                completionHandler: { _, _ in }
+                completionHandler: { granted, error in
+                    // Continue app initialization regardless of permission status
+                    DispatchQueue.main.async {
+                        application.registerForRemoteNotifications()
+                    }
+                }
             )
         } else {
             let settings = UIUserNotificationSettings(types: [.alert, .badge, .sound], categories: nil)
             application.registerUserNotificationSettings(settings)
+        }
+        
+        // Initialize the root view controller immediately
+        if let flutterViewController = window?.rootViewController as? FlutterViewController {
+            let channel = FlutterMethodChannel(
+                name: "app_state",
+                binaryMessenger: flutterViewController.binaryMessenger
+            )
+            channel.setMethodCallHandler { (call, result) in
+                if call.method == "getInitialRoute" {
+                    result("loading")
+                } else {
+                    result(FlutterMethodNotImplemented)
+                }
+            }
         }
         
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)

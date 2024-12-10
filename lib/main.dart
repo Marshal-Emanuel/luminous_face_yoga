@@ -8,7 +8,6 @@ import 'package:luminous_face_yoga/webview_screen.dart';
 import 'services/progress_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 Future<void> main() async {
   try {
@@ -16,7 +15,6 @@ Future<void> main() async {
     
     if (Platform.isIOS) {
       await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-      await InAppWebViewController.setWebContentsDebuggingEnabled(true);
     }
     
     runApp(const AppInitializer());

@@ -91,5 +91,9 @@
 	    <string>badge</string>
 	    <string>sound</string>
 	</array>
+	<key>NSAllowsWebContentAccess</key>
+	<true/>
+	<key>NSAllowsWebContentInspection</key>
+	<false/>
 </dict>
 </plist>
