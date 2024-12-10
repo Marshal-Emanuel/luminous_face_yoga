@@ -1,6 +1,7 @@
 import UIKit
 import Flutter
 import awesome_notifications
+import UserNotifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -17,7 +18,7 @@ import awesome_notifications
             
             let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound, .criticalAlert]
             UNUserNotificationCenter.current().requestAuthorization(
-            options: authOptions,
+                options: authOptions,
                 completionHandler: { _, _ in }
             )
         } else {
@@ -51,7 +52,7 @@ import awesome_notifications
         let userInfo = response.notification.request.content.userInfo
         if let jsonData = try? JSONSerialization.data(withJSONObject: userInfo),
            let jsonString = String(data: jsonData, encoding: .utf8) {
-            SwiftAwesomeNotificationsPlugin.handleNotificationActionReceived(jsonString)
+            SwiftAwesomeNotificationsPlugin.processNotificationActionFromJson(jsonString)
         }
         completionHandler()
     }
