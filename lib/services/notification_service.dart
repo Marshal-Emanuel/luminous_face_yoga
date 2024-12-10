@@ -120,31 +120,28 @@ class NotificationService {
       }
       print('Notification channels initialized successfully');
 
-      // Now that channels are initialized, request permissions
-      print('Requesting notification permissions...');
-      final permissionGranted = await AwesomeNotifications().requestPermissionToSendNotifications();
-      
-      if (!permissionGranted) {
-        print('Notification permissions denied');
-        return false;
+      // For iOS, use the dedicated iOS permission request method
+      if (Platform.isIOS) {
+        print('Requesting iOS specific permissions...');
+        final iOSPermissionGranted = await requestIOSPermissions();
+        if (!iOSPermissionGranted) {
+          print('iOS notification permissions denied');
+          return false;
+        }
+      } else {
+        // For other platforms, use the standard permission request
+        print('Requesting notification permissions...');
+        final permissionGranted = await AwesomeNotifications().requestPermissionToSendNotifications();
+        if (!permissionGranted) {
+          print('Notification permissions denied');
+          return false;
+        }
       }
       print('Notification permissions granted');
 
-      // Only set initialized and send test notification if both steps succeeded
+      // Only set initialized if both steps succeeded
       _initialized = true;
       print('Notification initialization completed successfully');
-
-      // Send test notification
-      await AwesomeNotifications().createNotification(
-        content: NotificationContent(
-          id: 1,
-          channelKey: 'basic_channel',
-          title: 'Notification Test',
-          body: 'Notifications are working!',
-          notificationLayout: NotificationLayout.Default,
-        )
-      );
-      print('Test notification sent');
 
       return true;
     } catch (e) {

@@ -9,13 +9,15 @@ import UserNotifications
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
-        // Register plugins first
+        // Set UNUserNotificationCenter delegate first
+        if #available(iOS 10.0, *) {
+            UNUserNotificationCenter.current().delegate = self
+        }
+        
+        // Register plugins
         GeneratedPluginRegistrant.register(with: self)
         
-        // Set UNUserNotificationCenter delegate
-        UNUserNotificationCenter.current().delegate = self
-        
-        // Initialize the root view controller immediately
+        // Initialize the root view controller
         if let flutterViewController = window?.rootViewController as? FlutterViewController {
             let channel = FlutterMethodChannel(
                 name: "app_state",
