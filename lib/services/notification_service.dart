@@ -163,7 +163,7 @@ class NotificationService {
     required int hour,
     required int minute,
   }) async {
-    await AwesomeNotifications().cancelSchedule(1);
+    await AwesomeNotifications().cancel(1);
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
         id: 1,
