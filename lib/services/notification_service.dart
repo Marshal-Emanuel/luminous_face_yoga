@@ -73,8 +73,8 @@ class NotificationService {
             channelKey: 'basic_channel',
             channelName: 'Basic Notifications',
             channelDescription: 'Notification channel for basic tests',
-            defaultColor: Color(0xFF66D7D1),
-            ledColor: Color(0xFF465A72),
+            defaultColor: const Color(0xFF66D7D1),
+            ledColor: const Color(0xFF465A72),
             importance: NotificationImportance.High,
             playSound: true,
             enableVibration: true,
@@ -86,8 +86,8 @@ class NotificationService {
             channelKey: 'scheduled_channel',
             channelName: 'Scheduled Notifications',
             channelDescription: 'Channel for scheduled reminders and tips',
-            defaultColor: Color(0xFF66D7D1),
-            ledColor: Color(0xFF465A72),
+            defaultColor: const Color(0xFF66D7D1),
+            ledColor: const Color(0xFF465A72),
             importance: NotificationImportance.High,
             playSound: true,
             enableVibration: true,
@@ -99,8 +99,8 @@ class NotificationService {
             channelKey: 'achievements',
             channelName: 'Achievement Notifications',
             channelDescription: 'Channel for achievement notifications',
-            defaultColor: Color(0xFF66D7D1),
-            ledColor: Color(0xFF465A72),
+            defaultColor: const Color(0xFF66D7D1),
+            ledColor: const Color(0xFF465A72),
             importance: NotificationImportance.High,
             playSound: true,
             enableVibration: true,
@@ -116,6 +116,9 @@ class NotificationService {
         return false;
       }
 
+      // Clean up any existing notifications
+      await AwesomeNotifications().cancelAll();
+
       // Then request permissions for iOS
       if (Platform.isIOS) {
         final isAllowed = await requestIOSPermissions();
@@ -125,7 +128,6 @@ class NotificationService {
         }
       }
 
-      await AwesomeNotifications().cancelAll();
       _initialized = true;
       return true;
     } catch (e) {

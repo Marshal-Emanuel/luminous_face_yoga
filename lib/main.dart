@@ -13,6 +13,12 @@ Future<void> main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
     
+    // Initialize notifications first before anything else
+    final notificationsInitialized = await NotificationService.initializeNotifications();
+    if (!notificationsInitialized) {
+      throw Exception('Failed to initialize notifications');
+    }
+    
     if (Platform.isIOS) {
       await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     }
@@ -40,7 +46,7 @@ class ErrorApp extends StatelessWidget {
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 16),
               const Text(
-                'Critical Error',
+                'Initialization Error',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -48,6 +54,24 @@ class ErrorApp extends StatelessWidget {
                 error,
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.red),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () async {
+                  try {
+                    final initialized = await NotificationService.initializeNotifications();
+                    if (!initialized) {
+                      throw Exception('Failed to initialize notifications');
+                    }
+                    runApp(const AppInitializer());
+                  } catch (e) {
+                    // Show error message
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $e')),
+                    );
+                  }
+                },
+                child: const Text('Retry'),
               ),
             ],
           ),
@@ -77,12 +101,6 @@ class _AppInitializerState extends State<AppInitializer> {
     try {
       final prefs = await SharedPreferences.getInstance();
       
-      // Initialize notifications first
-      final notificationsInitialized = await NotificationService.initializeNotifications();
-      if (!notificationsInitialized) {
-        throw Exception('Failed to initialize notifications');
-      }
-      
       // Handle first launch
       if (prefs.getBool('first_launch') ?? true) {
         await _handleFirstLaunch(prefs);
@@ -94,16 +112,8 @@ class _AppInitializerState extends State<AppInitializer> {
         ProgressService.scheduleMidnightCheck(),
       ]);
       
-      // Schedule notifications after everything is initialized
-      if (notificationsInitialized) {
-        await Future.wait([
-          NotificationService.scheduleEveningTip(),
-          NotificationService.scheduleDailyReminder(
-            hour: prefs.getInt('notification_hour') ?? 9,
-            minute: prefs.getInt('notification_minute') ?? 0,
-          ),
-        ]);
-      }
+      // Schedule notifications
+      await NotificationService.scheduleNotifications(prefs);
     } catch (e) {
       print('Error during app initialization: $e');
       rethrow;
