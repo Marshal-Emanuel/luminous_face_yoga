@@ -50,10 +50,10 @@ import UserNotifications
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let userInfo = response.notification.request.content.userInfo
-        if let jsonData = try? JSONSerialization.data(withJSONObject: userInfo),
-           let jsonString = String(data: jsonData, encoding: .utf8) {
-            SwiftAwesomeNotificationsPlugin.processNotificationActionFromJson(jsonString)
-        }
+        
+        // Try using the current recommended method for handling notifications
+        AwesomeNotifications.handleNotificationAction(userInfo)
+        
         completionHandler()
     }
     
