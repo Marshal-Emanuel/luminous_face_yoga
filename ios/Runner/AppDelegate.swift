@@ -45,8 +45,6 @@ import awesome_notifications
             application.registerUserNotificationSettings(settings)
         }
         
-        application.registerForRemoteNotifications()
-        
         // Register plugins
         GeneratedPluginRegistrant.register(with: flutterEngine)
         
@@ -81,32 +79,6 @@ import awesome_notifications
             AwesomeNotifications.instance.handleNotificationActionReceived(jsonString: jsonString)
         }
         completionHandler()
-    }
-    
-    // Handle remote notifications registration
-    override func application(
-        _ application: UIApplication,
-        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
-    ) {
-        let tokenParts = deviceToken.map { data in String(format: "%02.2hhx", data) }
-        let token = tokenParts.joined()
-        print("Device Token: \(token)")
-    }
-    
-    override func application(
-        _ application: UIApplication,
-        didFailToRegisterForRemoteNotificationsWithError error: Error
-    ) {
-        print("Failed to register for remote notifications: \(error)")
-    }
-    
-    // Handle background fetch
-    override func application(
-        _ application: UIApplication,
-        performFetchWithCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
-    ) {
-        // Implement background fetch logic here
-        completionHandler(.newData)
     }
     
     override func applicationWillResignActive(_ application: UIApplication) {
