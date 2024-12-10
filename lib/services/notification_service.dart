@@ -33,7 +33,7 @@ class NotificationService {
     if (!Platform.isIOS) return true;
     
     try {
-      // Request all necessary iOS permissions including critical alerts
+      // Request basic permissions
       final permissionStatus = await AwesomeNotifications().requestPermissionToSendNotifications(
         channelKey: 'basic_channel',
         permissions: [
@@ -41,8 +41,6 @@ class NotificationService {
           NotificationPermission.Sound,
           NotificationPermission.Badge,
           NotificationPermission.Vibration,
-          NotificationPermission.CriticalAlert,
-          NotificationPermission.FullScreenIntent,
         ]
       );
       
@@ -79,7 +77,6 @@ class NotificationService {
             playSound: true,
             enableVibration: true,
             defaultPrivacy: NotificationPrivacy.Private,
-            criticalAlerts: true,
             onlyAlertOnce: false,
           ),
           NotificationChannel(
@@ -92,7 +89,6 @@ class NotificationService {
             playSound: true,
             enableVibration: true,
             defaultPrivacy: NotificationPrivacy.Private,
-            criticalAlerts: true,
             onlyAlertOnce: false,
           ),
           NotificationChannel(
@@ -105,7 +101,6 @@ class NotificationService {
             playSound: true,
             enableVibration: true,
             defaultPrivacy: NotificationPrivacy.Private,
-            criticalAlerts: true,
             onlyAlertOnce: false,
           ),
         ],
@@ -119,7 +114,7 @@ class NotificationService {
       // Clean up any existing notifications
       await AwesomeNotifications().cancelAll();
 
-      // Then request permissions for iOS
+      // Request permissions for iOS
       if (Platform.isIOS) {
         final isAllowed = await requestIOSPermissions();
         if (!isAllowed) {

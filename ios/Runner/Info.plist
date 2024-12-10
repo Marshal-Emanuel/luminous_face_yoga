@@ -31,8 +31,6 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
@@ -47,6 +45,13 @@
 	<true/>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>We need permission to send you reminders and tips to help maintain your face yoga practice.</string>
+	<key>NSCriticalAlertsUsageDescription</key>
+	<string>We need permission to send you important reminders for your face yoga practice.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
@@ -62,10 +67,6 @@
 	<true/>
 	<key>UIFileSharingEnabled</key>
 	<true/>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>fetch</string>
-	</array>
 	<key>NSProcessInfoPowerStateDidChangeNotification</key>
 	<true/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
@@ -74,26 +75,14 @@
 	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
-	    <key>UIApplicationSupportsMultipleScenes</key>
-	    <false/>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
 	</dict>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
-	    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	</array>
 	<key>UIRequiresPersistentWiFi</key>
 	<true/>
-	<key>UNUserNotificationCenterEnabled</key>
-	<true/>
-	<key>UNAuthorizationOptions</key>
-	<array>
-	    <string>alert</string>
-	    <string>badge</string>
-	    <string>sound</string>
-	</array>
-	<key>NSAllowsWebContentAccess</key>
-	<true/>
-	<key>NSAllowsWebContentInspection</key>
-	<false/>
 </dict>
 </plist>
