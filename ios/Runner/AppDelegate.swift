@@ -76,7 +76,7 @@ import awesome_notifications
         let userInfo = response.notification.request.content.userInfo
         if let jsonData = try? JSONSerialization.data(withJSONObject: userInfo),
            let jsonString = String(data: jsonData, encoding: .utf8) {
-            SwiftAwesomeNotificationsPlugin.instance.handleNotificationActionReceived(jsonString: jsonString)
+            AwesomeNotificationsPlugin.handleNotificationActionReceived(jsonString: jsonString)
         }
         completionHandler()
     }
