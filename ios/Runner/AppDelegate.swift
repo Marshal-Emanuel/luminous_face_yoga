@@ -2,7 +2,6 @@ import UIKit
 import Flutter
 import awesome_notifications
 import UserNotifications
-import WebKit
 import flutter_inappwebview
 
 @main
@@ -11,11 +10,11 @@ import flutter_inappwebview
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
-        if #available(iOS 14.0, *) {
-            InAppWebView.debugLoggingSettings.isEnabled = false
-        }
-        
+        // Register plugins first
         GeneratedPluginRegistrant.register(with: self)
+        
+        // Configure InAppWebView
+        InAppWebViewOptions.webView.isInspectable = false
         
         // Request notification authorization
         if #available(iOS 10.0, *) {
