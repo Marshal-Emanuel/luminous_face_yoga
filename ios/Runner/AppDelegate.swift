@@ -1,35 +1,15 @@
-import Flutter
 import UIKit
-import UserNotifications
+import Flutter
 import awesome_notifications
 
-@main
+@UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {
     override func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
-        // Create and configure window
-        self.window = UIWindow(frame: UIScreen.main.bounds)
-        
-        // Create Flutter engine
-        let flutterEngine = FlutterEngine(name: "main")
-        flutterEngine.run()
-        
-        // Create Flutter view controller
-        let flutterViewController = FlutterViewController(
-            engine: flutterEngine,
-            nibName: nil,
-            bundle: nil
-        )
-        
-        // Set root view controller
-        self.window?.rootViewController = flutterViewController
-        
-        // Configure UI style
-        if #available(iOS 13.0, *) {
-            window?.overrideUserInterfaceStyle = .light
-        }
+        // Initialize Awesome Notifications
+        AwesomeNotifications.shared.initialize()
         
         // Request notification authorization
         if #available(iOS 10.0, *) {
@@ -45,12 +25,7 @@ import awesome_notifications
             application.registerUserNotificationSettings(settings)
         }
         
-        // Register plugins
-        GeneratedPluginRegistrant.register(with: flutterEngine)
-        
-        // Make window visible
-        self.window?.makeKeyAndVisible()
-        
+        GeneratedPluginRegistrant.register(with: self)
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
     
@@ -76,26 +51,13 @@ import awesome_notifications
         let userInfo = response.notification.request.content.userInfo
         if let jsonData = try? JSONSerialization.data(withJSONObject: userInfo),
            let jsonString = String(data: jsonData, encoding: .utf8) {
-            SwiftAwesomeNotificationsPlugin.instance.handleNotificationActionReceived(jsonString: jsonString)
+            AwesomeNotifications.shared.handleNotificationActionReceived(jsonString: jsonString)
         }
         completionHandler()
     }
     
-    override func applicationWillResignActive(_ application: UIApplication) {
-        super.applicationWillResignActive(application)
-        window?.resignFirstResponder()
-    }
-    
     override func applicationDidBecomeActive(_ application: UIApplication) {
         super.applicationDidBecomeActive(application)
-        window?.makeKeyAndVisible()
-        
-        // Reset badge count when app becomes active
         application.applicationIconBadgeNumber = 0
-    }
-    
-    override func applicationDidEnterBackground(_ application: UIApplication) {
-        super.applicationDidEnterBackground(application)
-        // Perform any background tasks cleanup here
     }
 }
