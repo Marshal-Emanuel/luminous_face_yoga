@@ -3,6 +3,7 @@ import Flutter
 import awesome_notifications
 import UserNotifications
 import WebKit
+import flutter_inappwebview
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -10,13 +11,9 @@ import WebKit
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
-        // Disable web content debugging for release builds
-        #if !DEBUG
-        if #available(iOS 16.4, *) {
-            let webView = WKWebView()
-            webView.isInspectable = false
+        if #available(iOS 14.0, *) {
+            InAppWebView.debugLoggingSettings.isEnabled = false
         }
-        #endif
         
         GeneratedPluginRegistrant.register(with: self)
         

@@ -53,9 +53,11 @@
 		<true/>
 		<key>NSAllowsArbitraryLoadsInWebContent</key>
 		<true/>
-		<key>NSTemporaryExceptionMinimumTLSVersion</key>
-		<string>TLSv1.2</string>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
 	</dict>
+	<key>io.flutter.embedded_views_preview</key>
+	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
 	<key>UIFileSharingEnabled</key>
