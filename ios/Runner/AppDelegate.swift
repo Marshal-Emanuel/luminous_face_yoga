@@ -2,14 +2,14 @@ import UIKit
 import Flutter
 import awesome_notifications
 
-@UIApplicationMain
+@main
 @objc class AppDelegate: FlutterAppDelegate {
     override func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
         // Initialize Awesome Notifications
-        AwesomeNotifications.shared.initialize()
+        SwiftAwesomeNotificationsPlugin.initialize()
         
         // Request notification authorization
         if #available(iOS 10.0, *) {
@@ -17,7 +17,7 @@ import awesome_notifications
             
             let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound, .criticalAlert]
             UNUserNotificationCenter.current().requestAuthorization(
-                options: authOptions,
+            options: authOptions,
                 completionHandler: { _, _ in }
             )
         } else {
@@ -51,7 +51,7 @@ import awesome_notifications
         let userInfo = response.notification.request.content.userInfo
         if let jsonData = try? JSONSerialization.data(withJSONObject: userInfo),
            let jsonString = String(data: jsonData, encoding: .utf8) {
-            AwesomeNotifications.shared.handleNotificationActionReceived(jsonString: jsonString)
+            SwiftAwesomeNotificationsPlugin.handleNotificationActionReceived(jsonString)
         }
         completionHandler()
     }
