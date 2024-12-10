@@ -1,6 +1,8 @@
 import UIKit
 import Flutter
 import awesome_notifications
+import UserNotifications
+import WebKit
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -8,6 +10,14 @@ import awesome_notifications
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
+        // Disable web content debugging for release builds
+        #if !DEBUG
+        if #available(iOS 16.4, *) {
+            let webView = WKWebView()
+            webView.isInspectable = false
+        }
+        #endif
+        
         GeneratedPluginRegistrant.register(with: self)
         
         // Request notification authorization
