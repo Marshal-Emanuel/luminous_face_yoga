@@ -44,6 +44,8 @@ class NotificationService {
         ]
       );
       
+      print('iOS permission request result: $permissionStatus');
+      
       // Store permission status
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('notification_permission_granted', permissionStatus);
@@ -67,7 +69,19 @@ class NotificationService {
     
     try {
       print('Starting notification initialization...');
-      // Initialize channels first
+      
+      // For iOS, request permissions first
+      if (Platform.isIOS) {
+        print('Requesting iOS permissions...');
+        final isAllowed = await requestIOSPermissions();
+        if (!isAllowed) {
+          print('iOS notification permissions not granted');
+          return false;
+        }
+        print('iOS permissions granted successfully');
+      }
+      
+      // Then initialize channels
       final initialized = await AwesomeNotifications().initialize(
         null,
         [
@@ -120,19 +134,19 @@ class NotificationService {
       await AwesomeNotifications().cancelAll();
       print('Cleared existing notifications');
 
-      // Request permissions for iOS
-      if (Platform.isIOS) {
-        print('Requesting iOS permissions...');
-        final isAllowed = await requestIOSPermissions();
-        if (!isAllowed) {
-          print('iOS notification permissions not granted');
-          return false;
-        }
-        print('iOS permissions granted successfully');
+      // Verify initialization
+      final isAllowed = await AwesomeNotifications().isNotificationAllowed();
+      if (!isAllowed) {
+        print('Notifications not allowed after initialization');
+        return false;
       }
 
       _initialized = true;
       print('Notification initialization completed successfully');
+      
+      // Send a test notification after 5 seconds
+      await sendTestNotification();
+      
       return true;
     } catch (e) {
       print('Error initializing notifications: $e');
