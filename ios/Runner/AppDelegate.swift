@@ -40,25 +40,12 @@ import UserNotifications
     ) {
         print("[AppDelegate] Received notification in foreground: \(notification.request.identifier)")
         
-        // Handle different iOS versions
-        if #available(iOS 15.0, *) {
-            // iOS 15 and later: Use all options to ensure visibility
-            completionHandler([.badge, .sound, .banner, .list, .alert])
-        } else if #available(iOS 14.0, *) {
-            // iOS 14.0 to 14.x: Use banner style
-            if #available(iOS 14.2, *) {
-                // iOS 14.2+: Include list for better notification center visibility
-                completionHandler([.banner, .badge, .sound, .list])
-            } else {
-                // iOS 14.0-14.1: Basic banner style
-                completionHandler([.banner, .badge, .sound])
-            }
-        } else if #available(iOS 13.0, *) {
-            // iOS 13.0 to 13.x: Use alert style
-            completionHandler([.alert, .badge, .sound])
+        if #available(iOS 14.0, *) {
+            // iOS 14 and later (including 15+)
+            completionHandler([.banner, .list, .sound, .badge])
         } else {
-            // iOS 12.x: Use basic alert style
-            completionHandler([.alert, .badge, .sound])
+            // iOS 13 and earlier
+            completionHandler([.alert, .sound, .badge])
         }
     }
     
