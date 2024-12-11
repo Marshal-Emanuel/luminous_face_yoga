@@ -67,7 +67,6 @@ class NotificationService {
 
   static Future<bool> initializeNotifications() async {
     if (_initialized) {
-      print('Notifications already initialized');
       return true;
     }
 
@@ -123,29 +122,26 @@ class NotificationService {
       }
 
       // Step 2: Request permissions based on platform
-      bool permissionGranted;
-      if (Platform.isIOS) {
-        permissionGranted = await requestIOSPermissions();
-      } else {
-        permissionGranted = await AwesomeNotifications().requestPermissionToSendNotifications();
-      }
-
+      bool permissionGranted = await AwesomeNotifications().isNotificationAllowed();
+      
       if (!permissionGranted) {
-        throw Exception('Notification permissions denied');
+        // If not allowed, request permissions
+        permissionGranted = Platform.isIOS 
+            ? await requestIOSPermissions()
+            : await AwesomeNotifications().requestPermissionToSendNotifications();
+            
+        if (!permissionGranted) {
+          throw Exception('Notification permissions denied');
+        }
       }
 
-      // Step 3: Check if notifications are allowed by system
-      if (!await AwesomeNotifications().isNotificationAllowed()) {
-        throw Exception('Notifications not allowed by system');
-      }
-
-      // Step 4: Send test notification
+      // Step 3: Send test notification
       await AwesomeNotifications().createNotification(
         content: NotificationContent(
           id: 1,
           channelKey: 'basic_channel',
-          title: 'Testing Notifications',
-          body: 'If you see this, notifications are working!',
+          title: 'Notification Test',
+          body: 'Notifications are working!',
           notificationLayout: NotificationLayout.Default,
         ),
       );
