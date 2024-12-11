@@ -40,8 +40,11 @@ import UserNotifications
     ) {
         print("[AppDelegate] Received notification in foreground: \(notification.request.identifier)")
         
-        if #available(iOS 14.0, *) {
-            // iOS 14 and later (including 15+)
+        if #available(iOS 15.0, *) {
+            // iOS 15 and later: Use all options for maximum compatibility
+            completionHandler([.banner, .list, .sound, .badge, .alert])
+        } else if #available(iOS 14.0, *) {
+            // iOS 14.0 to 14.x
             completionHandler([.banner, .list, .sound, .badge])
         } else {
             // iOS 13 and earlier

@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationService {
   static bool _initialized = false;
-  
+
   static final List<String> eveningTips = [
     "Take time to massage your facial pressure points tonight",
     "Practice mindful breathing during your face yoga routine",
@@ -31,25 +31,25 @@ class NotificationService {
 
   static Future<bool> requestIOSPermissions() async {
     if (!Platform.isIOS) return true;
-    
+
     try {
       // Request basic permissions
-      final permissionStatus = await AwesomeNotifications().requestPermissionToSendNotifications(
-        channelKey: 'basic_channel',
-        permissions: [
-          NotificationPermission.Alert,
-          NotificationPermission.Sound,
-          NotificationPermission.Badge,
-          NotificationPermission.Vibration,
-        ]
-      );
-      
+      final permissionStatus = await AwesomeNotifications()
+          .requestPermissionToSendNotifications(
+              channelKey: 'basic_channel',
+              permissions: [
+            NotificationPermission.Alert,
+            NotificationPermission.Sound,
+            NotificationPermission.Badge,
+            NotificationPermission.Vibration,
+          ]);
+
       print('iOS permission request result: $permissionStatus');
-      
+
       // Store permission status
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('notification_permission_granted', permissionStatus);
-      
+
       return permissionStatus;
     } catch (e) {
       print('Error requesting iOS permissions: $e');
@@ -66,10 +66,10 @@ class NotificationService {
       print('Notifications already initialized');
       return true;
     }
-    
+
     try {
       print('Starting notification initialization...');
-      
+
       // First initialize channels without checking permissions
       print('Initializing notification channels...');
       final initialized = await AwesomeNotifications().initialize(
@@ -120,10 +120,16 @@ class NotificationService {
       }
       print('Notification channels initialized successfully');
 
-      // Now that channels are initialized, request permissions
-      print('Requesting notification permissions...');
-      final permissionGranted = await AwesomeNotifications().requestPermissionToSendNotifications();
-      
+      // Request permissions based on platform
+      bool permissionGranted;
+      if (Platform.isIOS) {
+        print('Requesting iOS specific permissions...');
+        permissionGranted = await requestIOSPermissions();
+      } else {
+        print('Requesting notification permissions...');
+        permissionGranted = await AwesomeNotifications().requestPermissionToSendNotifications();
+      }
+
       if (!permissionGranted) {
         print('Notification permissions denied');
         return false;
@@ -187,7 +193,7 @@ class NotificationService {
   }) async {
     try {
       await AwesomeNotifications().cancel(1);
-      
+
       await AwesomeNotifications().createNotification(
         content: NotificationContent(
           id: 1,
@@ -212,9 +218,11 @@ class NotificationService {
     }
   }
 
-  static Future<void> sendNotification(String programName, String week, String day) async {
-    int notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
-    
+  static Future<void> sendNotification(
+      String programName, String week, String day) async {
+    int notificationId =
+        DateTime.now().millisecondsSinceEpoch.remainder(100000);
+
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
         id: notificationId,
@@ -260,7 +268,8 @@ class NotificationService {
         id: 3,
         channelKey: 'achievements',
         title: '🎉 Achievement Unlocked!',
-        body: 'Congratulations! Your Face Yoga assessment is ready. Check your inbox for your bespoke report!',
+        body:
+            'Congratulations! Your Face Yoga assessment is ready. Check your inbox for your bespoke report!',
         notificationLayout: NotificationLayout.Default,
         displayOnForeground: true,
         displayOnBackground: true,
@@ -275,7 +284,8 @@ class NotificationService {
         id: 4,
         channelKey: 'scheduled_channel',
         title: 'Enhance Your Face Yoga Journey',
-        body: 'Discover our membership plans, live classes, and specialized tools',
+        body:
+            'Discover our membership plans, live classes, and specialized tools',
         notificationLayout: NotificationLayout.Default,
         payload: {'url': 'https://www.luminousfaceyoga.com/shop/'},
       ),
@@ -298,7 +308,8 @@ class NotificationService {
         id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
         channelKey: 'basic_channel',
         title: 'Missed Streak',
-        body: 'You missed a day! Your current streak is now $currentStreak days. Log in to keep your streak going!',
+        body:
+            'You missed a day! Your current streak is now $currentStreak days. Log in to keep your streak going!',
         notificationLayout: NotificationLayout.Default,
         category: NotificationCategory.Reminder,
       ),
@@ -342,7 +353,7 @@ class NotificationService {
       print('Sending test notification...');
       final now = DateTime.now();
       final testTime = now.add(Duration(seconds: 5));
-      
+
       await AwesomeNotifications().createNotification(
         content: NotificationContent(
           id: 999,
@@ -373,4 +384,3 @@ class NotificationService {
     }
   }
 }
-
