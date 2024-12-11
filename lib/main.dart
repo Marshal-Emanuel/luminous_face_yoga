@@ -13,14 +13,11 @@ Future<void> main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
 
-    // 1. Notifications must initialize first because:
-    // - Progress tracking needs it for achievements
-    // - Streak system needs it for reminders
-    // - Settings screen needs it for scheduling
-    final notificationsInitialized =
-        await NotificationService.initializeNotifications();
+    // Initialize basic notifications
+    final notificationsInitialized = await NotificationService.initializeNotifications();
     if (!notificationsInitialized) {
-      throw Exception('Failed to initialize notifications');
+      print('Failed to initialize notifications');
+      // Continue app launch even if notifications fail
     }
 
     // Other services depend on this initialization
@@ -32,7 +29,7 @@ Future<void> main() async {
 
     runApp(const AppInitializer());
   } catch (e) {
-    print('Critical error during app initialization: $e');
+    print('Error during app initialization: $e');
     runApp(ErrorApp(error: e.toString()));
   }
 }
