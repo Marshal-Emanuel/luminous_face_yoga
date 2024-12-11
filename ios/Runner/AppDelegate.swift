@@ -42,16 +42,7 @@ import UserNotifications
     ) {
         print("[AppDelegate] Received notification in foreground: \(notification.request.identifier)")
         
-        if #available(iOS 15.0, *) {
-            // iOS 15 and later: Use specific options for better control
-            completionHandler([.banner, .sound, .badge, .list])
-        } else if #available(iOS 14.0, *) {
-            // iOS 14.0 to 14.x
-            completionHandler([.banner, .list, .sound, .badge])
-        } else {
-            // iOS 13 and earlier
-            completionHandler([.alert, .sound, .badge])
-        }
+        completionHandler([.banner, .list, .sound, .badge])
     }
     
     // Handle notification response when app is in background
