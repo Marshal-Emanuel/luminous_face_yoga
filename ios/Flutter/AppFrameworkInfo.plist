@@ -22,5 +22,11 @@
   <string>1.0</string>
   <key>MinimumOSVersion</key>
   <string>12.0</string>
+  <key>UIBackgroundModes</key>
+  <array>
+    <string>processing</string>
+  </array>
+  <key>NSCriticalAlertEnabled</key>
+  <true/>
 </dict>
 </plist>

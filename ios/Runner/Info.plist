@@ -44,7 +44,7 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSUserNotificationsUsageDescription</key>
-	<string>We need permission to send you reminders and tips to help maintain your face yoga practice.</string>
+	<string>We need to send you reminders for your face yoga exercises and important tips</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>processing</string>
@@ -77,5 +77,11 @@
 	<array>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	</array>
+	<key>NSSupportsAutomaticValidation</key>
+	<true/>
+	<key>NSCriticalAlertEnabled</key>
+	<true/>
+	<key>UNUserNotificationCenterDelegate</key>
+	<string>$(PRODUCT_MODULE_NAME).AppDelegate</string>
 </dict>
 </plist>

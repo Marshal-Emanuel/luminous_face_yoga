@@ -12,17 +12,24 @@ import 'dart:io';
 Future<void> main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
-    
-    // Initialize notifications first before anything else
-    final notificationsInitialized = await NotificationService.initializeNotifications();
+
+    // 1. Notifications must initialize first because:
+    // - Progress tracking needs it for achievements
+    // - Streak system needs it for reminders
+    // - Settings screen needs it for scheduling
+    final notificationsInitialized =
+        await NotificationService.initializeNotifications();
     if (!notificationsInitialized) {
       throw Exception('Failed to initialize notifications');
     }
-    
+
+    // Other services depend on this initialization
+
     if (Platform.isIOS) {
-      await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      await SystemChrome.setPreferredOrientations(
+          [DeviceOrientation.portraitUp]);
     }
-    
+
     runApp(const AppInitializer());
   } catch (e) {
     print('Critical error during app initialization: $e');
@@ -32,9 +39,9 @@ Future<void> main() async {
 
 class ErrorApp extends StatelessWidget {
   final String error;
-  
+
   const ErrorApp({Key? key, required this.error}) : super(key: key);
-  
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -59,7 +66,8 @@ class ErrorApp extends StatelessWidget {
               ElevatedButton(
                 onPressed: () async {
                   try {
-                    final initialized = await NotificationService.initializeNotifications();
+                    final initialized =
+                        await NotificationService.initializeNotifications();
                     if (!initialized) {
                       throw Exception('Failed to initialize notifications');
                     }
@@ -83,35 +91,35 @@ class ErrorApp extends StatelessWidget {
 
 class AppInitializer extends StatefulWidget {
   const AppInitializer({Key? key}) : super(key: key);
-  
+
   @override
   _AppInitializerState createState() => _AppInitializerState();
 }
 
 class _AppInitializerState extends State<AppInitializer> {
   late final Future<void> _initFuture;
-  
+
   @override
   void initState() {
     super.initState();
     _initFuture = _initializeApp();
   }
-  
+
   Future<void> _initializeApp() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      
+
       // Handle first launch
       if (prefs.getBool('first_launch') ?? true) {
         await _handleFirstLaunch(prefs);
       }
-      
+
       // Initialize other services
       await Future.wait([
         ProgressService.updateStreakOnAppLaunch(),
         ProgressService.scheduleMidnightCheck(),
       ]);
-      
+
       // Schedule notifications
       await NotificationService.scheduleNotifications(prefs);
     } catch (e) {
@@ -119,7 +127,7 @@ class _AppInitializerState extends State<AppInitializer> {
       rethrow;
     }
   }
-  
+
   Future<void> _handleFirstLaunch(SharedPreferences prefs) async {
     await prefs.setBool('first_launch', false);
     await NotificationService.initializeDefaultSettings(prefs);
@@ -135,7 +143,7 @@ class _AppInitializerState extends State<AppInitializer> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return LoadingScreen();
           }
-          
+
           if (snapshot.hasError) {
             return Scaffold(
               backgroundColor: Colors.white,
@@ -143,11 +151,13 @@ class _AppInitializerState extends State<AppInitializer> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const Icon(Icons.error_outline,
+                        size: 48, color: Colors.red),
                     const SizedBox(height: 16),
                     const Text(
                       'Initialization Error',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -169,7 +179,7 @@ class _AppInitializerState extends State<AppInitializer> {
               ),
             );
           }
-          
+
           return const MyApp();
         },
       ),

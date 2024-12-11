@@ -33,7 +33,14 @@ class NotificationService {
     if (!Platform.isIOS) return true;
 
     try {
-      // Request basic permissions
+      // First check if permissions are already granted
+      final isAllowed = await AwesomeNotifications().isNotificationAllowed();
+      if (isAllowed) {
+        print('iOS notifications already allowed');
+        return true;
+      }
+
+      // Request permissions with critical alerts for iOS 15+
       final permissionStatus = await AwesomeNotifications()
           .requestPermissionToSendNotifications(
               channelKey: 'basic_channel',
@@ -42,6 +49,9 @@ class NotificationService {
             NotificationPermission.Sound,
             NotificationPermission.Badge,
             NotificationPermission.Vibration,
+            NotificationPermission.CriticalAlert,
+            NotificationPermission.FullScreenIntent,
+            NotificationPermission.Provisional,
           ]);
 
       print('iOS permission request result: $permissionStatus');
@@ -86,6 +96,7 @@ class NotificationService {
             enableVibration: true,
             defaultPrivacy: NotificationPrivacy.Public,
             onlyAlertOnce: false,
+            criticalAlerts: true,
           ),
           NotificationChannel(
             channelKey: 'scheduled_channel',
@@ -98,6 +109,7 @@ class NotificationService {
             enableVibration: true,
             defaultPrivacy: NotificationPrivacy.Public,
             onlyAlertOnce: false,
+            criticalAlerts: true,
           ),
           NotificationChannel(
             channelKey: 'achievements',
@@ -110,6 +122,7 @@ class NotificationService {
             enableVibration: true,
             defaultPrivacy: NotificationPrivacy.Public,
             onlyAlertOnce: false,
+            criticalAlerts: true,
           ),
         ],
       );
@@ -127,7 +140,8 @@ class NotificationService {
         permissionGranted = await requestIOSPermissions();
       } else {
         print('Requesting notification permissions...');
-        permissionGranted = await AwesomeNotifications().requestPermissionToSendNotifications();
+        permissionGranted =
+            await AwesomeNotifications().requestPermissionToSendNotifications();
       }
 
       if (!permissionGranted) {
@@ -142,14 +156,13 @@ class NotificationService {
 
       // Send test notification
       await AwesomeNotifications().createNotification(
-        content: NotificationContent(
-          id: 1,
-          channelKey: 'basic_channel',
-          title: 'Notification Test',
-          body: 'Notifications are working!',
-          notificationLayout: NotificationLayout.Default,
-        )
-      );
+          content: NotificationContent(
+        id: 1,
+        channelKey: 'basic_channel',
+        title: 'Notification Test',
+        body: 'Notifications are working!',
+        notificationLayout: NotificationLayout.Default,
+      ));
       print('Test notification sent');
 
       return true;

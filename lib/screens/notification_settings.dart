@@ -34,20 +34,22 @@ class _NotificationSettingsState extends State<NotificationSettings> {
         minute: prefs.getInt('notification_minute') ?? 0,
       );
       dailyReminders = prefs.getBool('daily_reminders') ?? true;
-      achievementNotifications = prefs.getBool('achievement_notifications') ?? true;
+      achievementNotifications =
+          prefs.getBool('achievement_notifications') ?? true;
       tipsNotifications = prefs.getBool('tips_notifications') ?? true;
     });
   }
 
   Future<void> saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     if (await NotificationService.isInitialized()) {
       // Save settings
       await prefs.setInt('notification_hour', selectedTime.hour);
       await prefs.setInt('notification_minute', selectedTime.minute);
       await prefs.setBool('daily_reminders', dailyReminders);
-      await prefs.setBool('achievement_notifications', achievementNotifications);
+      await prefs.setBool(
+          'achievement_notifications', achievementNotifications);
       await prefs.setBool('tips_notifications', tipsNotifications);
 
       // Cancel existing notifications if reminders are disabled
@@ -130,7 +132,8 @@ class _NotificationSettingsState extends State<NotificationSettings> {
                           initialTime: selectedTime,
                           builder: (context, child) {
                             return Theme(
-                              data: ThemeData.light().copyWith(primaryColor: Color(0xFFE99C83)),
+                              data: ThemeData.light()
+                                  .copyWith(primaryColor: Color(0xFFE99C83)),
                               child: child!,
                             );
                           },
