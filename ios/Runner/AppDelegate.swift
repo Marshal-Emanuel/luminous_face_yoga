@@ -40,7 +40,10 @@ import UserNotifications
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        completionHandler([.banner, .list, .sound, .badge])
+        // Always call completionHandler to prevent hanging
+        DispatchQueue.main.async {
+            completionHandler([.banner, .list, .sound, .badge])
+        }
     }
     
     // Handle notification response when app is in background
@@ -49,15 +52,15 @@ import UserNotifications
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        print("[AppDelegate] Notification tapped: \(response.notification.request.identifier)")
-        
-        let userInfo = response.notification.request.content.userInfo
-        NotificationCenter.default.post(
-            name: NSNotification.Name("didReceiveNotificationResponse"),
-            object: nil,
-            userInfo: userInfo
-        )
-        
-        completionHandler()
+        // Handle on main thread to prevent UI freezes
+        DispatchQueue.main.async {
+            let userInfo = response.notification.request.content.userInfo
+            NotificationCenter.default.post(
+                name: NSNotification.Name("didReceiveNotificationResponse"),
+                object: nil,
+                userInfo: userInfo
+            )
+            completionHandler()
+        }
     }
 }

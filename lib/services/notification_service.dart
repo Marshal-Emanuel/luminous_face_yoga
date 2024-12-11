@@ -62,7 +62,11 @@ class NotificationService {
 
   static Future<bool> initializeNotifications() async {
     if (_initialized) {
-      print('Notifications already initialized');
+      final isAllowed = await AwesomeNotifications().isNotificationAllowed();
+      if (!isAllowed) {
+        _initialized = false;
+        return false;
+      }
       return true;
     }
 
@@ -76,6 +80,9 @@ class NotificationService {
           return false;
         }
       }
+
+      // Cancel any existing notifications before initializing
+      await AwesomeNotifications().cancelAll();
 
       // Then initialize channels
       final initialized = await AwesomeNotifications().initialize(
@@ -92,6 +99,7 @@ class NotificationService {
             enableVibration: true,
             defaultPrivacy: NotificationPrivacy.Public,
             onlyAlertOnce: true,
+            locked: false,
           ),
           NotificationChannel(
             channelKey: 'scheduled_channel',
@@ -104,6 +112,7 @@ class NotificationService {
             enableVibration: true,
             defaultPrivacy: NotificationPrivacy.Public,
             onlyAlertOnce: true,
+            locked: false,
           ),
           NotificationChannel(
             channelKey: 'achievements',
@@ -116,14 +125,20 @@ class NotificationService {
             enableVibration: true,
             defaultPrivacy: NotificationPrivacy.Public,
             onlyAlertOnce: true,
+            locked: false,
           ),
         ],
       );
+
+      if (!initialized) {
+        return false;
+      }
 
       _initialized = true;
       return initialized;
     } catch (e) {
       print('Error during notification initialization: $e');
+      _initialized = false;
       return false;
     }
   }
@@ -161,6 +176,11 @@ class NotificationService {
     required int minute,
   }) async {
     try {
+      if (!_initialized) {
+        print('Notifications not initialized');
+        return;
+      }
+
       await AwesomeNotifications().cancel(1);
 
       await AwesomeNotifications().createNotification(
