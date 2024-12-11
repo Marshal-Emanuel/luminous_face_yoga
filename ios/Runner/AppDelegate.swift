@@ -42,7 +42,11 @@ import UserNotifications
     ) {
         // Always call completionHandler to prevent hanging
         DispatchQueue.main.async {
-            completionHandler([.banner, .list, .sound, .badge])
+            if #available(iOS 14.0, *) {
+                completionHandler([.banner, .list, .sound, .badge])
+            } else {
+                completionHandler([.alert, .sound, .badge])
+            }
         }
     }
     
