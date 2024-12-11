@@ -34,19 +34,19 @@ class NotificationService {
 
     try {
       print('Requesting iOS notification permissions...');
-      
+
       // Request basic permissions with proper error handling
       final permissionStatus = await AwesomeNotifications()
           .requestPermissionToSendNotifications(
               channelKey: 'basic_channel',
               permissions: [
-                NotificationPermission.Alert,
-                NotificationPermission.Sound,
-                NotificationPermission.Badge,
-                NotificationPermission.Vibration,
-                NotificationPermission.CriticalAlert, // Add for iOS 15+
-                NotificationPermission.FullScreenIntent, // Add for iOS 15+
-              ]);
+            NotificationPermission.Alert,
+            NotificationPermission.Sound,
+            NotificationPermission.Badge,
+            NotificationPermission.Vibration,
+            NotificationPermission.CriticalAlert, // Add for iOS 15+
+            NotificationPermission.FullScreenIntent, // Add for iOS 15+
+          ]);
 
       print('iOS permission request result: $permissionStatus');
 
@@ -72,94 +72,102 @@ class NotificationService {
     }
 
     try {
-      print('Starting notification initialization...');
-
-      // First initialize channels without checking permissions
-      print('Initializing notification channels...');
-      final initialized = await AwesomeNotifications().initialize(
-        null,
-        [
-          NotificationChannel(
-            channelKey: 'basic_channel',
-            channelName: 'Basic Notifications',
-            channelDescription: 'Notification channel for basic tests',
-            defaultColor: const Color(0xFF66D7D1),
-            ledColor: const Color(0xFF465A72),
-            importance: NotificationImportance.Max,
-            playSound: true,
-            enableVibration: true,
-            defaultPrivacy: NotificationPrivacy.Public,
-            onlyAlertOnce: false,
-          ),
-          NotificationChannel(
-            channelKey: 'scheduled_channel',
-            channelName: 'Scheduled Notifications',
-            channelDescription: 'Channel for scheduled reminders and tips',
-            defaultColor: const Color(0xFF66D7D1),
-            ledColor: const Color(0xFF465A72),
-            importance: NotificationImportance.Max,
-            playSound: true,
-            enableVibration: true,
-            defaultPrivacy: NotificationPrivacy.Public,
-            onlyAlertOnce: false,
-          ),
-          NotificationChannel(
-            channelKey: 'achievements',
-            channelName: 'Achievement Notifications',
-            channelDescription: 'Channel for achievement notifications',
-            defaultColor: const Color(0xFF66D7D1),
-            ledColor: const Color(0xFF465A72),
-            importance: NotificationImportance.Max,
-            playSound: true,
-            enableVibration: true,
-            defaultPrivacy: NotificationPrivacy.Public,
-            onlyAlertOnce: false,
-          ),
-        ],
-      );
-
-      if (!initialized) {
-        print('Failed to initialize notification channels');
-        return false;
+      // Step 1: Check if awesome_notifications is available
+      if (!await AwesomeNotifications().isNotificationAllowed()) {
+        throw Exception('Notifications not allowed by system');
       }
-      print('Notification channels initialized successfully');
 
-      // Request permissions based on platform
+      // Step 2: Initialize channels with try-catch
+      try {
+        final initialized = await AwesomeNotifications().initialize(
+          null,
+          [
+            NotificationChannel(
+              channelKey: 'basic_channel',
+              channelName: 'Basic Notifications',
+              channelDescription: 'Notification channel for basic tests',
+              defaultColor: const Color(0xFF66D7D1),
+              ledColor: const Color(0xFF465A72),
+              importance: NotificationImportance.High,
+              playSound: true,
+              enableVibration: true,
+              defaultPrivacy: NotificationPrivacy.Public,
+              onlyAlertOnce: false,
+              criticalAlerts: true,
+            ),
+            NotificationChannel(
+              channelKey: 'scheduled_channel',
+              channelName: 'Scheduled Notifications',
+              channelDescription: 'Channel for scheduled reminders and tips',
+              defaultColor: const Color(0xFF66D7D1),
+              ledColor: const Color(0xFF465A72),
+              importance: NotificationImportance.High,
+              playSound: true,
+              enableVibration: true,
+              defaultPrivacy: NotificationPrivacy.Public,
+              onlyAlertOnce: false,
+              criticalAlerts: true,
+            ),
+            NotificationChannel(
+              channelKey: 'achievements',
+              channelName: 'Achievement Notifications',
+              channelDescription: 'Channel for achievement notifications',
+              defaultColor: const Color(0xFF66D7D1),
+              ledColor: const Color(0xFF465A72),
+              importance: NotificationImportance.High,
+              playSound: true,
+              enableVibration: true,
+              defaultPrivacy: NotificationPrivacy.Public,
+              onlyAlertOnce: false,
+              criticalAlerts: true,
+            ),
+          ],
+        );
+
+        if (!initialized) {
+          throw Exception('Channel initialization returned false');
+        }
+      } catch (e) {
+        throw Exception('Failed to initialize channels: $e');
+      }
+
+      // Step 3: Request permissions with platform check
       bool permissionGranted;
-      if (Platform.isIOS) {
-        print('Requesting iOS specific permissions...');
-        permissionGranted = await requestIOSPermissions();
-      } else {
-        print('Requesting notification permissions...');
-        permissionGranted = await AwesomeNotifications().requestPermissionToSendNotifications();
+      try {
+        if (Platform.isIOS) {
+          permissionGranted = await requestIOSPermissions();
+          if (!permissionGranted) {
+            throw Exception('iOS permissions denied');
+          }
+        } else {
+          permissionGranted = await AwesomeNotifications().requestPermissionToSendNotifications();
+          if (!permissionGranted) {
+            throw Exception('Android permissions denied');
+          }
+        }
+      } catch (e) {
+        throw Exception('Permission request failed: $e');
       }
 
-      if (!permissionGranted) {
-        print('Notification permissions denied');
-        return false;
+      // Step 4: Send immediate test notification
+      try {
+        await AwesomeNotifications().createNotification(
+          content: NotificationContent(
+            id: 1,
+            channelKey: 'basic_channel',
+            title: 'Testing Notifications',
+            body: 'If you see this, notifications are working!',
+            notificationLayout: NotificationLayout.Default,
+          ),
+        );
+      } catch (e) {
+        throw Exception('Failed to send test notification: $e');
       }
-      print('Notification permissions granted');
 
-      // Only set initialized and send test notification if both steps succeeded
       _initialized = true;
-      print('Notification initialization completed successfully');
-
-      // Send test notification
-      await AwesomeNotifications().createNotification(
-        content: NotificationContent(
-          id: 1,
-          channelKey: 'basic_channel',
-          title: 'Notification Test',
-          body: 'Notifications are working!',
-          notificationLayout: NotificationLayout.Default,
-        )
-      );
-      print('Test notification sent');
-
       return true;
     } catch (e) {
-      print('Error during notification initialization: $e');
-      return false;
+      throw Exception('Notification initialization failed: $e');
     }
   }
 
@@ -385,6 +393,20 @@ class NotificationService {
     } catch (e) {
       print('Error sending test notification: $e');
       return false;
+    }
+  }
+
+  static Future<String> checkNotificationStatus() async {
+    try {
+      final isAllowed = await AwesomeNotifications().isNotificationAllowed();
+      final scheduledNotifications = await AwesomeNotifications().listScheduledNotifications();
+      
+      return '''
+      Notifications allowed: $isAllowed
+      Scheduled notifications count: ${scheduledNotifications.length}
+      ''';
+    } catch (e) {
+      return 'Error checking status: $e';
     }
   }
 }
