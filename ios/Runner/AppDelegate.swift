@@ -11,8 +11,10 @@ import UserNotifications
         // Register plugins first
         GeneratedPluginRegistrant.register(with: self)
         
-        // Set UNUserNotificationCenter delegate
-        UNUserNotificationCenter.current().delegate = self
+        // Set UNUserNotificationCenter delegate before requesting permissions
+        if #available(iOS 10.0, *) {
+            UNUserNotificationCenter.current().delegate = self
+        }
         
         // Initialize the root view controller immediately
         if let flutterViewController = window?.rootViewController as? FlutterViewController {
@@ -41,14 +43,14 @@ import UserNotifications
         print("[AppDelegate] Received notification in foreground: \(notification.request.identifier)")
         
         if #available(iOS 15.0, *) {
-            // iOS 15 and later: Use all options for maximum compatibility
-            completionHandler([.banner, .list, .sound, .badge, .alert])
+            // iOS 15 and later
+            completionHandler([[.banner, .sound, .badge, .list]])
         } else if #available(iOS 14.0, *) {
-            // iOS 14.0 to 14.x
-            completionHandler([.banner, .list, .sound, .badge])
+            // iOS 14
+            completionHandler([[.banner, .sound, .badge]])
         } else {
             // iOS 13 and earlier
-            completionHandler([.alert, .sound, .badge])
+            completionHandler([[.alert, .sound, .badge]])
         }
     }
     

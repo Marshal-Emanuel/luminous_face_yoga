@@ -33,16 +33,20 @@ class NotificationService {
     if (!Platform.isIOS) return true;
 
     try {
-      // Request basic permissions
+      print('Requesting iOS notification permissions...');
+      
+      // Request basic permissions with proper error handling
       final permissionStatus = await AwesomeNotifications()
           .requestPermissionToSendNotifications(
               channelKey: 'basic_channel',
               permissions: [
-            NotificationPermission.Alert,
-            NotificationPermission.Sound,
-            NotificationPermission.Badge,
-            NotificationPermission.Vibration,
-          ]);
+                NotificationPermission.Alert,
+                NotificationPermission.Sound,
+                NotificationPermission.Badge,
+                NotificationPermission.Vibration,
+                NotificationPermission.CriticalAlert, // Add for iOS 15+
+                NotificationPermission.FullScreenIntent, // Add for iOS 15+
+              ]);
 
       print('iOS permission request result: $permissionStatus');
 

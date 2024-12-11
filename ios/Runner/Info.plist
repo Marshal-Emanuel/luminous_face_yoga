@@ -45,6 +45,8 @@
 	<true/>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>We need permission to send you reminders and tips to help maintain your face yoga practice.</string>
+	<key>UNUserNotificationCenterDelegate</key>
+	<string>$(PRODUCT_MODULE_NAME).AppDelegate</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>processing</string>
