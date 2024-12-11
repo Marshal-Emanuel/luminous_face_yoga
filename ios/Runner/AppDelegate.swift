@@ -40,8 +40,6 @@ import UserNotifications
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        print("[AppDelegate] Received notification in foreground: \(notification.request.identifier)")
-        
         completionHandler([.banner, .list, .sound, .badge])
     }
     
