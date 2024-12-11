@@ -79,8 +79,6 @@
 	</array>
 	<key>NSSupportsAutomaticValidation</key>
 	<true/>
-	<key>NSCriticalAlertEnabled</key>
-	<true/>
 	<key>UNUserNotificationCenterDelegate</key>
 	<string>$(PRODUCT_MODULE_NAME).AppDelegate</string>
 </dict>

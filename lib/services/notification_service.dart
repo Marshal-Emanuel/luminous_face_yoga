@@ -33,32 +33,21 @@ class NotificationService {
     if (!Platform.isIOS) return true;
 
     try {
-      // First check if permissions are already granted
       final isAllowed = await AwesomeNotifications().isNotificationAllowed();
       if (isAllowed) {
         print('iOS notifications already allowed');
         return true;
       }
 
-      // Request permissions with critical alerts for iOS 15+
+      // Simplify to basic notification permissions
       final permissionStatus = await AwesomeNotifications()
           .requestPermissionToSendNotifications(
-              channelKey: 'basic_channel',
               permissions: [
             NotificationPermission.Alert,
             NotificationPermission.Sound,
             NotificationPermission.Badge,
             NotificationPermission.Vibration,
-            NotificationPermission.CriticalAlert,
-            NotificationPermission.FullScreenIntent,
-            NotificationPermission.Provisional,
           ]);
-
-      print('iOS permission request result: $permissionStatus');
-
-      // Store permission status
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('notification_permission_granted', permissionStatus);
 
       return permissionStatus;
     } catch (e) {
@@ -91,12 +80,12 @@ class NotificationService {
             channelDescription: 'Notification channel for basic tests',
             defaultColor: const Color(0xFF66D7D1),
             ledColor: const Color(0xFF465A72),
-            importance: NotificationImportance.Max,
+            importance: NotificationImportance.High,
             playSound: true,
             enableVibration: true,
             defaultPrivacy: NotificationPrivacy.Public,
             onlyAlertOnce: false,
-            criticalAlerts: true,
+            criticalAlerts: false,
           ),
           NotificationChannel(
             channelKey: 'scheduled_channel',
@@ -104,12 +93,12 @@ class NotificationService {
             channelDescription: 'Channel for scheduled reminders and tips',
             defaultColor: const Color(0xFF66D7D1),
             ledColor: const Color(0xFF465A72),
-            importance: NotificationImportance.Max,
+            importance: NotificationImportance.High,
             playSound: true,
             enableVibration: true,
             defaultPrivacy: NotificationPrivacy.Public,
             onlyAlertOnce: false,
-            criticalAlerts: true,
+            criticalAlerts: false,
           ),
           NotificationChannel(
             channelKey: 'achievements',
@@ -117,12 +106,12 @@ class NotificationService {
             channelDescription: 'Channel for achievement notifications',
             defaultColor: const Color(0xFF66D7D1),
             ledColor: const Color(0xFF465A72),
-            importance: NotificationImportance.Max,
+            importance: NotificationImportance.High,
             playSound: true,
             enableVibration: true,
             defaultPrivacy: NotificationPrivacy.Public,
             onlyAlertOnce: false,
-            criticalAlerts: true,
+            criticalAlerts: false,
           ),
         ],
       );
