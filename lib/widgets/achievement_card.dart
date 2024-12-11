@@ -11,6 +11,14 @@ class AchievementCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get screen size
+    final size = MediaQuery.of(context).size;
+    // Calculate responsive sizes
+    final cardPadding = size.width * 0.03; // 3% of screen width
+    final iconSize = size.width * 0.08; // 8% of screen width
+    final titleSize = size.width * 0.04; // 4% of screen width
+    final descSize = size.width * 0.035; // 3.5% of screen width
+
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -33,65 +41,65 @@ class AchievementCard extends StatelessWidget {
             offset: const Offset(0, 2),
           ),
         ],
-        borderRadius: BorderRadius.circular(16),
-        color: Colors.white,
+        borderRadius: BorderRadius.circular(size.width * 0.04), // Responsive radius
       ),
       child: Stack(
         children: [
+          // Background icon
           Positioned(
-            top: -10,
-            right: -10,
+            top: -cardPadding/2,
+            right: -cardPadding/2,
             child: Icon(
               achievement.icon,
-              size: 60,
+              size: iconSize * 1.5,
               color: achievement.primaryColor.withOpacity(0.1),
             ),
           ),
+          // Content
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: EdgeInsets.all(cardPadding),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   achievement.icon,
-                  size: 40,
+                  size: iconSize,
                   color: achievement.accentColor,
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: cardPadding * 0.75),
                 Text(
                   achievement.title,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Color(0xFF18314F),
-                    fontSize: 18,
+                  style: TextStyle(
+                    color: const Color(0xFF18314F),
+                    fontSize: titleSize,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: cardPadding * 0.5),
                 Text(
                   achievement.description,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Color(0xFF748395),
-                    fontSize: 14,
+                  style: TextStyle(
+                    color: const Color(0xFF748395),
+                    fontSize: descSize,
                   ),
                 ),
               ],
             ),
           ),
+          // Lock overlay
           if (!achievement.isUnlocked)
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(size.width * 0.04),
                 ),
-                child: const Center(
-                  child: Icon(
-                    Icons.lock,
-                    color: Colors.white,
-                    size: 30,
-                  ),
+                child: Icon(
+                  Icons.lock,
+                  color: Colors.white,
+                  size: iconSize * 0.75,
                 ),
               ),
             ),

@@ -6,16 +6,21 @@ import '../models/achievement_data.dart';
 import 'notification_service.dart';
 
 class ProgressService {
-  // Storage keys
-  static const String _achievementsKey = 'achievements';
-  static const String _streakKey = 'current_streak';
-  static const String _lastActiveDateKey = 'last_active_date';
-  static const String _streakDatesKey = 'streak_dates';
-  static const String _missedDatesKey = 'missed_dates';
+  // Add cooldown tracking
+  static DateTime? _lastUpdate;
+  static const _updateCooldown = Duration(minutes: 1);
+  static bool _updatedOnLaunch = false;
 
-  static const String LAST_STREAK_CHECK_KEY = 'last_streak_check';
+  // Consolidate streak keys
   static const String CURRENT_STREAK_KEY = 'current_streak';
+  static const String LAST_ACTIVE_DATE_KEY = 'last_active_date';
+  static const String STREAK_DATES_KEY = 'streak_dates';
+  static const String MISSED_DATES_KEY = 'missed_dates';
   static const String HIGHEST_STREAK_KEY = 'highest_streak';
+  static const String LAST_NOTIFIED_MISSED_KEY = 'last_notified_missed_date';
+  
+  // Other keys
+  static const String _achievementsKey = 'achievements';
 
   /// Unlocks an achievement by its [achievementId].
   static Future<void> unlockAchievement(String achievementId) async {
@@ -64,64 +69,93 @@ class ProgressService {
   /// Updates the current streak based on the last active date.
   static Future<void> updateStreak() async {
     try {
+      // Check cooldown
+      if (_lastUpdate != null && 
+          DateTime.now().difference(_lastUpdate!) < _updateCooldown) {
+        print('Skipping update - cooldown active');
+        return;
+      }
+
       final prefs = await SharedPreferences.getInstance();
-      final lastActiveDateString = prefs.getString(_lastActiveDateKey);
       final now = DateTime.now().toLocal();
-
-      // Get today's date at start of day
       final today = DateTime(now.year, now.month, now.day);
-
-      int currentStreak = prefs.getInt(_streakKey) ?? 0;
-      List<String> streakDates = prefs.getStringList(_streakDatesKey) ?? [];
-      List<String> missedDates = prefs.getStringList(_missedDatesKey) ?? [];
-
+      
+      // Get current data
+      final lastActiveDateString = prefs.getString(LAST_ACTIVE_DATE_KEY);
+      int currentStreak = prefs.getInt(CURRENT_STREAK_KEY) ?? 0;
+      List<String> streakDates = prefs.getStringList(STREAK_DATES_KEY) ?? [];
+      List<String> missedDates = prefs.getStringList(MISSED_DATES_KEY) ?? [];
+      
       print('Processing streak update...');
       print('Current streak before update: $currentStreak');
 
-      if (lastActiveDateString != null) {
-        final lastActive = DateTime.parse(lastActiveDateString).toUtc();
-        // Get last active date at start of day
-        final lastDate =
-            DateTime(lastActive.year, lastActive.month, lastActive.day);
-
-        // Calculate actual calendar day difference
-        final difference = today.difference(lastDate).inDays;
-        print('Calendar day difference: $difference');
-
-        if (difference == 0) {
-          // Same calendar day - no streak update needed
-          print(
-              'Same calendar day - maintaining current streak: $currentStreak');
-          return;
-        } else if (difference == 1) {
-          // Next calendar day - only increment if not already counted
-          if (!streakDates.contains(today.toIso8601String())) {
-            currentStreak += 1;
-            streakDates.add(today.toIso8601String());
-            print('New consecutive day - streak increased to: $currentStreak');
-          }
-        } else {
-          // More than one day missed
-          currentStreak = (currentStreak - 2).clamp(0, currentStreak);
-          if (!missedDates.contains(today.toIso8601String())) {
-            missedDates.add(today.toIso8601String());
-          }
-          print('Missed days detected - streak decreased to: $currentStreak');
-          await NotificationService.sendMissedStreakNotification(currentStreak);
-        }
-      } else {
-        // First time user
-        currentStreak = 1;
-        streakDates.add(today.toIso8601String());
-        print('First time user - streak initialized to: 1');
+      // First time user
+      if (lastActiveDateString == null) {
+        await prefs.setInt(CURRENT_STREAK_KEY, 0);
+        await prefs.setString(LAST_ACTIVE_DATE_KEY, today.toIso8601String());
+        print('First time user - streak initialized to: 0');
+        return;
       }
 
-      // Update storage with new values
-      await prefs.setString(_lastActiveDateKey, today.toIso8601String());
-      await prefs.setInt(_streakKey, currentStreak);
-      await prefs.setStringList(_streakDatesKey, streakDates);
-      await prefs.setStringList(_missedDatesKey, missedDates);
+      final lastActive = DateTime.parse(lastActiveDateString).toLocal();
+      final lastDate = DateTime(lastActive.year, lastActive.month, lastActive.day);
+      final difference = today.difference(lastDate).inDays;
 
+      print('Days since last active: $difference');
+
+      if (difference == 0) {
+        print('Same day - maintaining streak: $currentStreak');
+        return;
+      }
+
+      final todayString = today.toIso8601String();
+
+      if (difference == 1) {
+        // Next consecutive day
+        if (!streakDates.contains(todayString)) {
+          currentStreak += 1;
+          streakDates.add(todayString);
+          
+          // Update highest streak if needed
+          final highestStreak = prefs.getInt(HIGHEST_STREAK_KEY) ?? 0;
+          if (currentStreak > highestStreak) {
+            await prefs.setInt(HIGHEST_STREAK_KEY, currentStreak);
+          }
+          
+          // Check and unlock achievements
+          await _checkStreakAchievements(currentStreak);
+          
+          print('New consecutive day - streak increased to: $currentStreak');
+        }
+      } else {
+        // Missed streak
+        final lastNotifiedDate = prefs.getString(LAST_NOTIFIED_MISSED_KEY);
+        
+        // Only notify if we haven't notified for this missed period
+        if (lastNotifiedDate != todayString) {
+          await NotificationService.sendMissedStreakNotification(currentStreak);
+          await prefs.setString(LAST_NOTIFIED_MISSED_KEY, todayString);
+        }
+
+        // Decrement streak by 2 (minimum 0)
+        currentStreak = (currentStreak - 2).clamp(0, currentStreak);
+        
+        // Record missed date
+        if (!missedDates.contains(todayString)) {
+          missedDates.add(todayString);
+          streakDates.remove(todayString); // Ensure date isn't in both lists
+        }
+        
+        print('Missed days detected - streak decreased to: $currentStreak');
+      }
+
+      // Update storage
+      await prefs.setString(LAST_ACTIVE_DATE_KEY, todayString);
+      await prefs.setInt(CURRENT_STREAK_KEY, currentStreak);
+      await prefs.setStringList(STREAK_DATES_KEY, streakDates);
+      await prefs.setStringList(MISSED_DATES_KEY, missedDates);
+
+      _lastUpdate = DateTime.now();
       print('Streak update completed. Final streak: $currentStreak');
     } catch (e) {
       print('Error in updateStreak: $e');
@@ -141,62 +175,19 @@ class ProgressService {
 
   /// Updates streak on app launch
   static Future<void> updateStreakOnAppLaunch() async {
-    print('Processing streak update...');
-    final prefs = await SharedPreferences.getInstance();
-    
-    // Get current streak
-    int currentStreak = prefs.getInt(CURRENT_STREAK_KEY) ?? 0;
-    print('Current streak before update: $currentStreak');
-
-    // Get last check timestamp
-    int lastCheck = prefs.getInt(LAST_STREAK_CHECK_KEY) ?? 
-        DateTime.now().millisecondsSinceEpoch;
-    
-    // Calculate days difference
-    final lastCheckDate = DateTime.fromMillisecondsSinceEpoch(lastCheck);
-    final now = DateTime.now();
-    final difference = now.difference(lastCheckDate).inDays;
-    
-    print('Calendar day difference: $difference');
-
-    if (difference == 0) {
-      // Same day, no action needed
+    if (_updatedOnLaunch) {
+      print('Already updated on launch, skipping...');
       return;
-    } else if (difference == 1) {
-      // Next consecutive day
-      currentStreak++;
-      
-      // Update highest streak if needed
-      int highestStreak = prefs.getInt(HIGHEST_STREAK_KEY) ?? 0;
-      if (currentStreak > highestStreak) {
-        await prefs.setInt(HIGHEST_STREAK_KEY, currentStreak);
-      }
-    } else {
-      // Streak broken
-      if (currentStreak > 0) {
-        await NotificationService.sendMissedStreakNotification(currentStreak);
-      }
-      currentStreak = 0;
     }
-
-    // If it's a first-time user, set streak to 1
-    if (currentStreak == 0 && !prefs.containsKey(CURRENT_STREAK_KEY)) {
-      print('First time user - streak initialized to: 1');
-      currentStreak = 1;
-    }
-
-    // Save updated values
-    await prefs.setInt(CURRENT_STREAK_KEY, currentStreak);
-    await prefs.setInt(LAST_STREAK_CHECK_KEY, now.millisecondsSinceEpoch);
-    
-    print('Streak update completed. Final streak: $currentStreak');
+    await updateStreak();
+    _updatedOnLaunch = true;
   }
 
   /// Retrieves the current streak.
   static Future<int> getCurrentStreak() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getInt(_streakKey) ?? 0;
+      return prefs.getInt(CURRENT_STREAK_KEY) ?? 0;
     } catch (e) {
       print('Error in getCurrentStreak: $e');
       return 0;
@@ -227,10 +218,10 @@ class ProgressService {
   /// Optional: Method to reset streak (useful for testing)
   static Future<void> resetStreak() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_streakKey);
-    await prefs.remove(_lastActiveDateKey);
-    await prefs.remove(_streakDatesKey);
-    await prefs.remove(_missedDatesKey);
+    await prefs.remove(CURRENT_STREAK_KEY);
+    await prefs.remove(LAST_ACTIVE_DATE_KEY);
+    await prefs.remove(STREAK_DATES_KEY);
+    await prefs.remove(MISSED_DATES_KEY);
     print('Streak has been reset.');
   }
 
@@ -263,8 +254,7 @@ class ProgressService {
   static Future<List<DateTime>> getStreakDates() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final streakDates = prefs.getStringList(_streakDatesKey) ?? [];
-      print('Retrieved streak dates: $streakDates');
+      final streakDates = prefs.getStringList(STREAK_DATES_KEY) ?? [];
       return streakDates.map((dateStr) => DateTime.parse(dateStr)).toList();
     } catch (e) {
       print('Error in getStreakDates: $e');
@@ -276,8 +266,7 @@ class ProgressService {
   static Future<List<DateTime>> getMissedDates() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final missedDates = prefs.getStringList(_missedDatesKey) ?? [];
-      print('Retrieved missed dates: $missedDates');
+      final missedDates = prefs.getStringList(MISSED_DATES_KEY) ?? [];
       return missedDates.map((dateStr) => DateTime.parse(dateStr)).toList();
     } catch (e) {
       print('Error in getMissedDates: $e');
@@ -320,5 +309,15 @@ class ProgressService {
 
     // Save the updated progress data
     await prefs.setString('user_progress', json.encode(progressData));
+  }
+
+  /// Checks and unlocks streak achievements
+  static Future<void> _checkStreakAchievements(int currentStreak) async {
+    if (currentStreak >= 7) {
+      await unlockAchievement('week_streak');
+    }
+    if (currentStreak >= 30) {
+      await unlockAchievement('month_master');
+    }
   }
 }

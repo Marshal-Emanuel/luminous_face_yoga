@@ -6,6 +6,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 class NotificationService {
   static bool _initialized = false;
   
+  // Add channel constants
+  static const String STREAK_CHANNEL = 'streak_notifications';
+  static const String ACHIEVEMENT_CHANNEL = 'achievement_notifications';
+  static const String BASIC_CHANNEL = 'basic_channel';
+  static const String SCHEDULED_CHANNEL = 'scheduled_channel';
+
   static final List<String> eveningTips = [
     "Take time to massage your facial pressure points tonight",
     "Practice mindful breathing during your face yoga routine",
@@ -70,46 +76,40 @@ class NotificationService {
     try {
       print('Starting notification initialization...');
       
-      // First initialize channels without checking permissions
-      print('Initializing notification channels...');
       final initialized = await AwesomeNotifications().initialize(
         null,
         [
           NotificationChannel(
-            channelKey: 'basic_channel',
+            channelKey: BASIC_CHANNEL,
             channelName: 'Basic Notifications',
             channelDescription: 'Notification channel for basic tests',
             defaultColor: const Color(0xFF66D7D1),
             ledColor: const Color(0xFF465A72),
-            importance: NotificationImportance.Max,
-            playSound: true,
-            enableVibration: true,
-            defaultPrivacy: NotificationPrivacy.Public,
-            onlyAlertOnce: false,
+            importance: NotificationImportance.High,
           ),
           NotificationChannel(
-            channelKey: 'scheduled_channel',
+            channelKey: SCHEDULED_CHANNEL,
             channelName: 'Scheduled Notifications',
             channelDescription: 'Channel for scheduled reminders and tips',
             defaultColor: const Color(0xFF66D7D1),
             ledColor: const Color(0xFF465A72),
-            importance: NotificationImportance.Max,
-            playSound: true,
-            enableVibration: true,
-            defaultPrivacy: NotificationPrivacy.Public,
-            onlyAlertOnce: false,
+            importance: NotificationImportance.High,
           ),
           NotificationChannel(
-            channelKey: 'achievements',
-            channelName: 'Achievement Notifications',
-            channelDescription: 'Channel for achievement notifications',
+            channelKey: STREAK_CHANNEL,
+            channelName: 'Streak Notifications',
+            channelDescription: 'Notifications about your practice streak',
             defaultColor: const Color(0xFF66D7D1),
             ledColor: const Color(0xFF465A72),
-            importance: NotificationImportance.Max,
-            playSound: true,
-            enableVibration: true,
-            defaultPrivacy: NotificationPrivacy.Public,
-            onlyAlertOnce: false,
+            importance: NotificationImportance.High,
+          ),
+          NotificationChannel(
+            channelKey: ACHIEVEMENT_CHANNEL,
+            channelName: 'Achievement Notifications',
+            channelDescription: 'Notifications about unlocked achievements',
+            defaultColor: const Color(0xFFE99C83),
+            ledColor: const Color(0xFF465A72),
+            importance: NotificationImportance.High,
           ),
         ],
       );
@@ -292,17 +292,51 @@ class NotificationService {
     await AwesomeNotifications().cancelAll();
   }
 
-  static Future<void> sendMissedStreakNotification(int currentStreak) async {
-    await AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
-        channelKey: 'basic_channel',
-        title: 'Missed Streak',
-        body: 'You missed a day! Your current streak is now $currentStreak days. Log in to keep your streak going!',
-        notificationLayout: NotificationLayout.Default,
-        category: NotificationCategory.Reminder,
-      ),
-    );
+  static Future<void> sendMissedStreakNotification(
+    int previousStreak, 
+    {int daysMissed = 1}
+  ) async {
+    try {
+      final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+      
+      String title;
+      String body;
+      
+      if (daysMissed == 1) {
+        title = 'Streak Interrupted';
+        body = 'You missed yesterday! Your streak was $previousStreak days. Come back today to rebuild your streak!';
+      } else {
+        title = 'Welcome Back!';
+        body = 'You missed $daysMissed days. Your previous streak was $previousStreak days. Start today to build a new streak!';
+      }
+
+      await AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: notificationId,
+          channelKey: STREAK_CHANNEL,  // Use streak-specific channel
+          title: title,
+          body: body,
+          notificationLayout: NotificationLayout.Default,
+          category: NotificationCategory.Reminder,
+          wakeUpScreen: true,
+          displayOnForeground: true,
+          displayOnBackground: true,
+        ),
+        schedule: NotificationCalendar(
+          hour: 9,
+          minute: 0,
+          second: 0,
+          millisecond: 0,
+          repeats: false,
+          allowWhileIdle: true,
+          preciseAlarm: true,
+        ),
+      );
+      
+      print('Missed streak notification scheduled: $daysMissed days missed');
+    } catch (e) {
+      print('Error sending missed streak notification: $e');
+    }
   }
 
   static Future<void> scheduleNotifications(SharedPreferences prefs) async {
