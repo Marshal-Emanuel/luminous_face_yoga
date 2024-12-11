@@ -13,11 +13,12 @@ class AchievementCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // Get screen size
     final size = MediaQuery.of(context).size;
-    // Calculate responsive sizes
-    final cardPadding = size.width * 0.03; // 3% of screen width
-    final iconSize = size.width * 0.08; // 8% of screen width
-    final titleSize = size.width * 0.04; // 4% of screen width
-    final descSize = size.width * 0.035; // 3.5% of screen width
+    // Calculate responsive sizes with larger factors
+    final cardPadding = size.width * 0.04;  // Increased from 0.03
+    final iconSize = size.width * 0.1;      // Increased from 0.08
+    final titleSize = size.width * 0.045;   // Increased from 0.04
+    final descSize = size.width * 0.04;     // Increased from 0.035
+    final backgroundIconSize = iconSize * 1.8; // Increased multiplier from 1.5
 
     return Container(
       decoration: BoxDecoration(
@@ -32,16 +33,16 @@ class AchievementCard extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: achievement.accentColor.withOpacity(0.2),
-            blurRadius: 2,
+            blurRadius: 4,  // Increased from 2
             offset: const Offset(0, 4),
           ),
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
+            blurRadius: 6,  // Increased from 4
             offset: const Offset(0, 2),
           ),
         ],
-        borderRadius: BorderRadius.circular(size.width * 0.04), // Responsive radius
+        borderRadius: BorderRadius.circular(size.width * 0.05), // Increased from 0.04
       ),
       child: Stack(
         children: [
@@ -51,7 +52,7 @@ class AchievementCard extends StatelessWidget {
             right: -cardPadding/2,
             child: Icon(
               achievement.icon,
-              size: iconSize * 1.5,
+              size: backgroundIconSize,
               color: achievement.primaryColor.withOpacity(0.1),
             ),
           ),
@@ -94,12 +95,12 @@ class AchievementCard extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(size.width * 0.04),
+                  borderRadius: BorderRadius.circular(size.width * 0.05),
                 ),
                 child: Icon(
                   Icons.lock,
                   color: Colors.white,
-                  size: iconSize * 0.75,
+                  size: iconSize * 0.8, // Increased from 0.75
                 ),
               ),
             ),

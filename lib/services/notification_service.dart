@@ -2,10 +2,11 @@ import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 class NotificationService {
   static bool _initialized = false;
-  
+
   // Add channel constants
   static const String STREAK_CHANNEL = 'streak_notifications';
   static const String ACHIEVEMENT_CHANNEL = 'achievement_notifications';
@@ -37,25 +38,25 @@ class NotificationService {
 
   static Future<bool> requestIOSPermissions() async {
     if (!Platform.isIOS) return true;
-    
+
     try {
       // Request basic permissions
-      final permissionStatus = await AwesomeNotifications().requestPermissionToSendNotifications(
-        channelKey: 'basic_channel',
-        permissions: [
-          NotificationPermission.Alert,
-          NotificationPermission.Sound,
-          NotificationPermission.Badge,
-          NotificationPermission.Vibration,
-        ]
-      );
-      
+      final permissionStatus = await AwesomeNotifications()
+          .requestPermissionToSendNotifications(
+              channelKey: 'basic_channel',
+              permissions: [
+            NotificationPermission.Alert,
+            NotificationPermission.Sound,
+            NotificationPermission.Badge,
+            NotificationPermission.Vibration,
+          ]);
+
       print('iOS permission request result: $permissionStatus');
-      
+
       // Store permission status
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('notification_permission_granted', permissionStatus);
-      
+
       return permissionStatus;
     } catch (e) {
       print('Error requesting iOS permissions: $e');
@@ -72,10 +73,35 @@ class NotificationService {
       print('Notifications already initialized');
       return true;
     }
-    
+
     try {
       print('Starting notification initialization...');
-      
+
+      // Check Android version first
+      if (Platform.isAndroid) {
+        final androidInfo = await DeviceInfoPlugin().androidInfo;
+        final androidVersion = androidInfo.version.sdkInt;
+        print('Android SDK Version: $androidVersion');
+
+        // Different handling based on Android version
+        if (androidVersion >= 33) {
+          // Android 13 and above
+          final permissionStatus = await AwesomeNotifications()
+              .requestPermissionToSendNotifications(permissions: [
+            NotificationPermission.Alert,
+            NotificationPermission.Sound,
+            NotificationPermission.Badge,
+            NotificationPermission.Vibration,
+            NotificationPermission.PreciseAlarms,
+          ]);
+          if (!permissionStatus) {
+            print('Notification permissions denied');
+            return false;
+          }
+        }
+      }
+
+      // Initialize channels
       final initialized = await AwesomeNotifications().initialize(
         null,
         [
@@ -86,14 +112,9 @@ class NotificationService {
             defaultColor: const Color(0xFF66D7D1),
             ledColor: const Color(0xFF465A72),
             importance: NotificationImportance.High,
-          ),
-          NotificationChannel(
-            channelKey: SCHEDULED_CHANNEL,
-            channelName: 'Scheduled Notifications',
-            channelDescription: 'Channel for scheduled reminders and tips',
-            defaultColor: const Color(0xFF66D7D1),
-            ledColor: const Color(0xFF465A72),
-            importance: NotificationImportance.High,
+            playSound: true,
+            enableVibration: true,
+            defaultPrivacy: NotificationPrivacy.Public,
           ),
           NotificationChannel(
             channelKey: STREAK_CHANNEL,
@@ -102,6 +123,9 @@ class NotificationService {
             defaultColor: const Color(0xFF66D7D1),
             ledColor: const Color(0xFF465A72),
             importance: NotificationImportance.High,
+            playSound: true,
+            enableVibration: true,
+            defaultPrivacy: NotificationPrivacy.Public,
           ),
           NotificationChannel(
             channelKey: ACHIEVEMENT_CHANNEL,
@@ -110,6 +134,20 @@ class NotificationService {
             defaultColor: const Color(0xFFE99C83),
             ledColor: const Color(0xFF465A72),
             importance: NotificationImportance.High,
+            playSound: true,
+            enableVibration: true,
+            defaultPrivacy: NotificationPrivacy.Public,
+          ),
+          NotificationChannel(
+            channelKey: SCHEDULED_CHANNEL,
+            channelName: 'Scheduled Notifications',
+            channelDescription: 'Channel for scheduled reminders and tips',
+            defaultColor: const Color(0xFF66D7D1),
+            ledColor: const Color(0xFF465A72),
+            importance: NotificationImportance.High,
+            playSound: true,
+            enableVibration: true,
+            defaultPrivacy: NotificationPrivacy.Public,
           ),
         ],
       );
@@ -118,34 +156,9 @@ class NotificationService {
         print('Failed to initialize notification channels');
         return false;
       }
-      print('Notification channels initialized successfully');
 
-      // Now that channels are initialized, request permissions
-      print('Requesting notification permissions...');
-      final permissionGranted = await AwesomeNotifications().requestPermissionToSendNotifications();
-      
-      if (!permissionGranted) {
-        print('Notification permissions denied');
-        return false;
-      }
-      print('Notification permissions granted');
-
-      // Only set initialized and send test notification if both steps succeeded
       _initialized = true;
       print('Notification initialization completed successfully');
-
-      // Send test notification
-      await AwesomeNotifications().createNotification(
-        content: NotificationContent(
-          id: 1,
-          channelKey: 'basic_channel',
-          title: 'Notification Test',
-          body: 'Notifications are working!',
-          notificationLayout: NotificationLayout.Default,
-        )
-      );
-      print('Test notification sent');
-
       return true;
     } catch (e) {
       print('Error during notification initialization: $e');
@@ -187,7 +200,7 @@ class NotificationService {
   }) async {
     try {
       await AwesomeNotifications().cancel(1);
-      
+
       await AwesomeNotifications().createNotification(
         content: NotificationContent(
           id: 1,
@@ -212,13 +225,15 @@ class NotificationService {
     }
   }
 
-  static Future<void> sendNotification(String programName, String week, String day) async {
-    int notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
-    
+  static Future<void> sendNotification(
+      String programName, String week, String day) async {
+    int notificationId =
+        DateTime.now().millisecondsSinceEpoch.remainder(100000);
+
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
         id: notificationId,
-        channelKey: 'basic_channel',
+        channelKey: BASIC_CHANNEL,
         title: 'Program Progress',
         body: 'For program $programName, you reached $week - $day',
       ),
@@ -258,9 +273,10 @@ class NotificationService {
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
         id: 3,
-        channelKey: 'achievements',
+        channelKey: ACHIEVEMENT_CHANNEL,
         title: '🎉 Achievement Unlocked!',
-        body: 'Congratulations! Your Face Yoga assessment is ready. Check your inbox for your bespoke report!',
+        body:
+            'Congratulations! Your Face Yoga assessment is ready. Check your inbox for your bespoke report!',
         notificationLayout: NotificationLayout.Default,
         displayOnForeground: true,
         displayOnBackground: true,
@@ -275,7 +291,8 @@ class NotificationService {
         id: 4,
         channelKey: 'scheduled_channel',
         title: 'Enhance Your Face Yoga Journey',
-        body: 'Discover our membership plans, live classes, and specialized tools',
+        body:
+            'Discover our membership plans, live classes, and specialized tools',
         notificationLayout: NotificationLayout.Default,
         payload: {'url': 'https://www.luminousfaceyoga.com/shop/'},
       ),
@@ -292,28 +309,29 @@ class NotificationService {
     await AwesomeNotifications().cancelAll();
   }
 
-  static Future<void> sendMissedStreakNotification(
-    int previousStreak, 
-    {int daysMissed = 1}
-  ) async {
+  static Future<void> sendMissedStreakNotification(int previousStreak,
+      {int daysMissed = 1}) async {
     try {
-      final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
-      
+      final notificationId =
+          DateTime.now().millisecondsSinceEpoch.remainder(100000);
+
       String title;
       String body;
-      
+
       if (daysMissed == 1) {
         title = 'Streak Interrupted';
-        body = 'You missed yesterday! Your streak was $previousStreak days. Come back today to rebuild your streak!';
+        body =
+            'You missed yesterday! Your streak was $previousStreak days. Come back today to rebuild your streak!';
       } else {
         title = 'Welcome Back!';
-        body = 'You missed $daysMissed days. Your previous streak was $previousStreak days. Start today to build a new streak!';
+        body =
+            'You missed $daysMissed days. Your previous streak was $previousStreak days. Start today to build a new streak!';
       }
 
       await AwesomeNotifications().createNotification(
         content: NotificationContent(
           id: notificationId,
-          channelKey: STREAK_CHANNEL,  // Use streak-specific channel
+          channelKey: STREAK_CHANNEL, // Use streak-specific channel
           title: title,
           body: body,
           notificationLayout: NotificationLayout.Default,
@@ -332,7 +350,7 @@ class NotificationService {
           preciseAlarm: true,
         ),
       );
-      
+
       print('Missed streak notification scheduled: $daysMissed days missed');
     } catch (e) {
       print('Error sending missed streak notification: $e');
@@ -376,11 +394,11 @@ class NotificationService {
       print('Sending test notification...');
       final now = DateTime.now();
       final testTime = now.add(Duration(seconds: 5));
-      
+
       await AwesomeNotifications().createNotification(
         content: NotificationContent(
           id: 999,
-          channelKey: 'basic_channel',
+          channelKey: BASIC_CHANNEL,
           title: 'Test Notification',
           body: 'If you see this, notifications are working!',
           notificationLayout: NotificationLayout.Default,
@@ -407,4 +425,3 @@ class NotificationService {
     }
   }
 }
-
