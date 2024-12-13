@@ -18,7 +18,7 @@ class ProgressService {
   static const String MISSED_DATES_KEY = 'missed_dates';
   static const String HIGHEST_STREAK_KEY = 'highest_streak';
   static const String LAST_NOTIFIED_MISSED_KEY = 'last_notified_missed_date';
-  
+
   // Other keys
   static const String _achievementsKey = 'achievements';
 
@@ -30,47 +30,57 @@ class ProgressService {
       final achievements = achievementsJson != null
           ? Map<String, dynamic>.from(json.decode(achievementsJson))
           : {};
-      achievements[achievementId] = {
-        'isUnlocked': true,
-        'unlockedAt': DateTime.now().toIso8601String(),
-      };
-      await prefs.setString(_achievementsKey, json.encode(achievements));
-      print('Achievement $achievementId unlocked successfully.');
+
+      // Only unlock if not already unlocked
+      if (!achievements.containsKey(achievementId) || 
+          achievements[achievementId]['isUnlocked'] != true) {
+        
+        achievements[achievementId] = {
+          'isUnlocked': true,
+          'unlockedAt': DateTime.now().toIso8601String(),
+        };
+        await prefs.setString(_achievementsKey, json.encode(achievements));
+        
+        // Send notification
+        await NotificationService.sendAchievementNotification(achievementId);
+        
+        print('Achievement $achievementId unlocked successfully');
+      }
     } catch (e) {
       print('Error in unlockAchievement: $e');
     }
   }
 
- static Future<Map<String, String>?> getLastProgressForProgram(String programName) async {
-  final prefs = await SharedPreferences.getInstance();
-  final progressJson = prefs.getString('user_progress');
-  if (progressJson != null) {
-    final progressData = Map<String, dynamic>.from(json.decode(progressJson));
-    if (progressData.containsKey(programName)) {
-      final programProgress = Map<String, dynamic>.from(progressData[programName]);
-      final week = programProgress['week']?.toString() ?? '';
-      final day = programProgress['day']?.toString() ?? '';
-      return {
-        'week': week,
-        'day': day,
-      };
+  static Future<Map<String, String>?> getLastProgressForProgram(
+      String programName) async {
+    final prefs = await SharedPreferences.getInstance();
+    final progressJson = prefs.getString('user_progress');
+    if (progressJson != null) {
+      final progressData = Map<String, dynamic>.from(json.decode(progressJson));
+      if (progressData.containsKey(programName)) {
+        final programProgress =
+            Map<String, dynamic>.from(progressData[programName]);
+        final week = programProgress['week']?.toString() ?? '';
+        final day = programProgress['day']?.toString() ?? '';
+        return {
+          'week': week,
+          'day': day,
+        };
+      }
     }
+    return null; // No progress found for this program
   }
-  return null; // No progress found for this program
-}
 
   /// changelog.:  Unlocks the quiz achievement without affecting the streak.
   static Future<void> unlockQuizAchievement() async {
     await unlockAchievement('first_quiz');
   }
 
-  
-
   /// Updates the current streak based on the last active date.
   static Future<void> updateStreak() async {
     try {
       // Check cooldown
-      if (_lastUpdate != null && 
+      if (_lastUpdate != null &&
           DateTime.now().difference(_lastUpdate!) < _updateCooldown) {
         print('Skipping update - cooldown active');
         return;
@@ -79,13 +89,13 @@ class ProgressService {
       final prefs = await SharedPreferences.getInstance();
       final now = DateTime.now().toLocal();
       final today = DateTime(now.year, now.month, now.day);
-      
+
       // Get current data
       final lastActiveDateString = prefs.getString(LAST_ACTIVE_DATE_KEY);
       int currentStreak = prefs.getInt(CURRENT_STREAK_KEY) ?? 0;
       List<String> streakDates = prefs.getStringList(STREAK_DATES_KEY) ?? [];
       List<String> missedDates = prefs.getStringList(MISSED_DATES_KEY) ?? [];
-      
+
       print('Processing streak update...');
       print('Current streak before update: $currentStreak');
 
@@ -98,7 +108,8 @@ class ProgressService {
       }
 
       final lastActive = DateTime.parse(lastActiveDateString).toLocal();
-      final lastDate = DateTime(lastActive.year, lastActive.month, lastActive.day);
+      final lastDate =
+          DateTime(lastActive.year, lastActive.month, lastActive.day);
       final difference = today.difference(lastDate).inDays;
 
       print('Days since last active: $difference');
@@ -115,22 +126,22 @@ class ProgressService {
         if (!streakDates.contains(todayString)) {
           currentStreak += 1;
           streakDates.add(todayString);
-          
+
           // Update highest streak if needed
           final highestStreak = prefs.getInt(HIGHEST_STREAK_KEY) ?? 0;
           if (currentStreak > highestStreak) {
             await prefs.setInt(HIGHEST_STREAK_KEY, currentStreak);
           }
-          
+
           // Check and unlock achievements
           await _checkStreakAchievements(currentStreak);
-          
+
           print('New consecutive day - streak increased to: $currentStreak');
         }
       } else {
         // Missed streak
         final lastNotifiedDate = prefs.getString(LAST_NOTIFIED_MISSED_KEY);
-        
+
         // Only notify if we haven't notified for this missed period
         if (lastNotifiedDate != todayString) {
           await NotificationService.sendMissedStreakNotification(currentStreak);
@@ -139,13 +150,13 @@ class ProgressService {
 
         // Decrement streak by 2 (minimum 0)
         currentStreak = (currentStreak - 2).clamp(0, currentStreak);
-        
+
         // Record missed date
         if (!missedDates.contains(todayString)) {
           missedDates.add(todayString);
           streakDates.remove(todayString); // Ensure date isn't in both lists
         }
-        
+
         print('Missed days detected - streak decreased to: $currentStreak');
       }
 
@@ -294,7 +305,8 @@ class ProgressService {
     );
   }
 
-  static Future<void> saveProgress(String programName, String week, String day) async {
+  static Future<void> saveProgress(
+      String programName, String week, String day) async {
     final prefs = await SharedPreferences.getInstance();
     final progressJson = prefs.getString('user_progress');
     final progressData = progressJson != null
@@ -313,11 +325,28 @@ class ProgressService {
 
   /// Checks and unlocks streak achievements
   static Future<void> _checkStreakAchievements(int currentStreak) async {
-    if (currentStreak >= 7) {
-      await unlockAchievement('week_streak');
-    }
-    if (currentStreak >= 30) {
-      await unlockAchievement('month_master');
+    try {
+      // Weekly Warrior (7 days)
+      if (currentStreak >= 7) {
+        await unlockAchievement('weekly_warrior');
+        await NotificationService.sendAchievementNotification('weekly_warrior');
+      }
+      
+      // Monthly Master (30 days)
+      if (currentStreak >= 30) {
+        await unlockAchievement('monthly_master');
+        await NotificationService.sendAchievementNotification('monthly_master');
+      }
+      
+      // Face Yoga Expert (100 days)
+      if (currentStreak >= 100) {
+        await unlockAchievement('face_yoga_expert');
+        await NotificationService.sendAchievementNotification('face_yoga_expert');
+      }
+      
+      print('Checked streak achievements for streak: $currentStreak');
+    } catch (e) {
+      print('Error checking streak achievements: $e');
     }
   }
 }

@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import '../models/achievement_data.dart';
+
+const String _titleStyle = '<font face="Avenir-Medium" size="18">%s</font>';
+const String _bodyStyle = '<font face="Avenir-Light" size="16">%s</font>';
 
 class NotificationService {
   static bool _initialized = false;
@@ -14,26 +18,33 @@ class NotificationService {
   static const String SCHEDULED_CHANNEL = 'scheduled_channel';
 
   static final List<String> eveningTips = [
-    "Take time to massage your facial pressure points tonight",
-    "Practice mindful breathing during your face yoga routine",
-    "Remember to relax your jaw throughout the day",
-    "Keep your facial muscles relaxed while working",
-    "Incorporate neck exercises into your routine",
-    "Practice good posture to prevent neck strain",
-    "Stay hydrated for optimal skin elasticity",
-    "Try facial muscle resistance exercises tonight",
-    "Focus on symmetrical facial exercises",
-    "Practice tongue positioning exercises",
-    "Remember to exercise your eye muscles today",
-    "Try cheek lifting exercises before bed",
-    "Practice forehead smoothing techniques",
-    "Work on your smile muscles tonight",
-    "Do some gentle face muscle stretches",
-    "Practice face yoga breathing techniques",
-    "Focus on lymphatic drainage exercises",
-    "Try face yoga exercises for better sleep",
-    "Work on your facial muscle tone tonight",
-    "Practice face yoga for stress relief"
+    "Eat protein at every meal",
+    "Try doing your face yoga and skincare routine early evening before you are too tired",
+    "Try Castor oil if you have thirsty skin",
+    "Do a few cheek lifts daily",
+    "Feeling stressed? Do square breathing, breath in for 4, hold for 4, out for 4 and hold for 4",
+    "Make sure you study the muscle diagram to help you isolate your facial muscles",
+    "Check out our bad habits blog",
+    "Affirmation – say it 3 times (and mean it)– I feel fabulous",
+    "Take a trip to the Relaxation hub",
+    "Use a mirror when practising face yoga to check positioning",
+    "Always use clean hands for face yoga!",
+    "Have you checked out the latest live class on catch up?",
+    "Don't forget to register for your live classes!",
+    "Feel puffy in the mornings? Do some lymphatic drainage techniques",
+    "Struggling to fit face yoga in? Do a technique while waiting at the traffic lights!",
+    "Have you uploaded your progress pictures lately?",
+    "Make sure you get 8 hours of sleep at night",
+    "Always wear SPF 50, even on the cloudy days!",
+    "Never go to sleep in your makeup!",
+    "Affirmation – say it 3 times (and mean it)– I radiate joy and happiness",
+    "Quick mouth toning practise to do now: Run tongue around inside of lip line firmly, 3 times in each direction",
+    "Eat plenty of foods rich in Vit C for the anti-oxidants and to synthesise collagen",
+    "Drink plenty of water every day!",
+    "Limit processed sugar to avoid glycation (sugar face)",
+    "Affirmation – say it 3 times (and mean it)– I am calm and serene",
+    "Struggling to fit face yoga in? Do a technique while boiling the kettle!",
+    "Quick neck practise to do now: Look up, jut out lower lip, hold for 10 seconds"
   ];
 
   static Future<bool> requestIOSPermissions() async {
@@ -204,9 +215,10 @@ class NotificationService {
       await AwesomeNotifications().createNotification(
         content: NotificationContent(
           id: 1,
-          channelKey: 'scheduled_channel',
-          title: 'Time for Face Yoga!',
-          body: 'Ready for your daily facial exercises?',
+          channelKey: SCHEDULED_CHANNEL,
+          title: _titleStyle.replaceAll('%s', 'Time for Face Yoga'),
+          body: _bodyStyle.replaceAll(
+              '%s', 'Ready for your daily facial exercises?'),
           notificationLayout: NotificationLayout.Default,
           wakeUpScreen: true,
         ),
@@ -214,14 +226,13 @@ class NotificationService {
           hour: hour,
           minute: minute,
           second: 0,
-          millisecond: 0,
           repeats: true,
           allowWhileIdle: true,
           preciseAlarm: true,
         ),
       );
     } catch (e) {
-      // Handle error silently
+      print('Error scheduling daily reminder: $e');
     }
   }
 
@@ -234,26 +245,37 @@ class NotificationService {
       content: NotificationContent(
         id: notificationId,
         channelKey: BASIC_CHANNEL,
-        title: 'Program Progress',
-        body: 'For program $programName, you reached $week - $day',
+        title: _titleStyle.replaceAll('%s', 'Program Progress'),
+        body: _bodyStyle.replaceAll(
+            '%s', 'For program $programName, you reached $week - $day'),
       ),
     );
   }
 
   static Future<void> scheduleEveningTip() async {
     try {
-      print('Scheduling evening tip...');
-      final tipIndex = DateTime.now().day % eveningTips.length;
+      await AwesomeNotifications().cancel(2);
+
+      // Get today's tip index
+      final now = DateTime.now();
+      final tipIndex = now.day % eveningTips.length;
+
+      // Schedule for today's evening if it's before 8 PM, otherwise tomorrow
+      final scheduleTime = now.hour < 20 ? now : now.add(Duration(days: 1));
+
       await AwesomeNotifications().createNotification(
         content: NotificationContent(
           id: 2,
-          channelKey: 'scheduled_channel',
-          title: 'Face Yoga Tip',
-          body: eveningTips[tipIndex],
+          channelKey: SCHEDULED_CHANNEL,
+          title: _titleStyle.replaceAll('%s', 'Face Yoga Tip'),
+          body: _bodyStyle.replaceAll('%s', eveningTips[tipIndex]),
           notificationLayout: NotificationLayout.Default,
           wakeUpScreen: true,
         ),
         schedule: NotificationCalendar(
+          year: scheduleTime.year,
+          month: scheduleTime.month,
+          day: scheduleTime.day,
           hour: 20,
           minute: 0,
           second: 0,
@@ -262,7 +284,7 @@ class NotificationService {
           preciseAlarm: true,
         ),
       );
-      print('Evening tip scheduled successfully');
+      print('Evening tip scheduled for ${scheduleTime.toString()}');
     } catch (e) {
       print('Error scheduling evening tip: $e');
     }
@@ -274,9 +296,9 @@ class NotificationService {
       content: NotificationContent(
         id: 3,
         channelKey: ACHIEVEMENT_CHANNEL,
-        title: '🎉 Achievement Unlocked!',
-        body:
-            'Congratulations! Your Face Yoga assessment is ready. Check your inbox for your bespoke report!',
+        title: _titleStyle.replaceAll('%s', 'Achievement Unlocked'),
+        body: _bodyStyle.replaceAll('%s',
+            'Your Face Yoga assessment is ready. Check your inbox for your bespoke report!'),
         notificationLayout: NotificationLayout.Default,
         displayOnForeground: true,
         displayOnBackground: true,
@@ -289,10 +311,10 @@ class NotificationService {
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
         id: 4,
-        channelKey: 'scheduled_channel',
-        title: 'Enhance Your Face Yoga Journey',
-        body:
-            'Discover our membership plans, live classes, and specialized tools',
+        channelKey: SCHEDULED_CHANNEL,
+        title: _titleStyle.replaceAll('%s', 'Enhance Your Face Yoga Journey'),
+        body: _bodyStyle.replaceAll('%s',
+            'Discover our membership plans, live classes, and specialized tools'),
         notificationLayout: NotificationLayout.Default,
         payload: {'url': 'https://www.luminousfaceyoga.com/shop/'},
       ),
@@ -315,18 +337,9 @@ class NotificationService {
       final notificationId =
           DateTime.now().millisecondsSinceEpoch.remainder(100000);
 
-      String title;
-      String body;
-
-      if (daysMissed == 1) {
-        title = 'Streak Interrupted';
-        body =
-            'You missed yesterday! Your streak was $previousStreak days. Come back today to rebuild your streak!';
-      } else {
-        title = 'Welcome Back!';
-        body =
-            'You missed $daysMissed days. Your previous streak was $previousStreak days. Start today to build a new streak!';
-      }
+      String title = _titleStyle.replaceAll('%s', 'Streak Interrupted');
+      String body = _bodyStyle.replaceAll('%s',
+          'You missed yesterday! Your streak was $previousStreak days. Come back today to rebuild your streak!');
 
       await AwesomeNotifications().createNotification(
         content: NotificationContent(
@@ -399,8 +412,9 @@ class NotificationService {
         content: NotificationContent(
           id: 999,
           channelKey: BASIC_CHANNEL,
-          title: 'Test Notification',
-          body: 'If you see this, notifications are working!',
+          title: _titleStyle.replaceAll('%s', 'Test Notification'),
+          body: _bodyStyle.replaceAll(
+              '%s', 'If you see this, notifications are working!'),
           notificationLayout: NotificationLayout.Default,
           wakeUpScreen: true,
         ),
@@ -422,6 +436,53 @@ class NotificationService {
     } catch (e) {
       print('Error sending test notification: $e');
       return false;
+    }
+  }
+
+  static Future<void> sendWelcomeBackNotification() async {
+    try {
+      final notificationId =
+          DateTime.now().millisecondsSinceEpoch.remainder(100000);
+
+      await AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: notificationId,
+          channelKey: BASIC_CHANNEL,
+          title: _titleStyle.replaceAll('%s', 'Welcome Back'),
+          body: _bodyStyle.replaceAll(
+              '%s', 'Ready to work out those face muscles?'),
+          notificationLayout: NotificationLayout.Default,
+          displayOnForeground: true,
+          displayOnBackground: true,
+        ),
+      );
+    } catch (e) {
+      print('Error sending welcome back notification: $e');
+    }
+  }
+
+  static Future<void> sendAchievementNotification(String achievementId) async {
+    try {
+      final achievement = achievementsList.firstWhere(
+        (a) => a.id == achievementId,
+        orElse: () => throw Exception('Achievement not found: $achievementId'),
+      );
+
+      await AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+          channelKey: ACHIEVEMENT_CHANNEL,
+          title: _titleStyle.replaceAll('%s', 'Achievement Unlocked!'),
+          body: _bodyStyle.replaceAll(
+              '%s', '${achievement.title} - ${achievement.description}'),
+          notificationLayout: NotificationLayout.Default,
+          displayOnForeground: true,
+          displayOnBackground: true,
+          wakeUpScreen: true,
+        ),
+      );
+    } catch (e) {
+      print('Error sending achievement notification: $e');
     }
   }
 }

@@ -104,6 +104,9 @@ class _AppInitializerState extends State<AppInitializer> {
       // Handle first launch
       if (prefs.getBool('first_launch') ?? true) {
         await _handleFirstLaunch(prefs);
+      } else {
+        // Not first launch, show welcome back
+        await NotificationService.sendWelcomeBackNotification();
       }
       
       // Initialize other services
