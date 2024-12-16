@@ -16,7 +16,7 @@ Future<void> main() async {
     // Initialize notifications first before anything else
     final notificationsInitialized = await NotificationService.initializeNotifications();
     if (!notificationsInitialized) {
-      throw Exception('Failed to initialize notifications');
+      print('Failed to initialize notifications, continuing app startup');
     }
     
     if (Platform.isIOS) {
@@ -26,7 +26,7 @@ Future<void> main() async {
     runApp(const AppInitializer());
   } catch (e) {
     print('Critical error during app initialization: $e');
-    runApp(ErrorApp(error: e.toString()));
+    runApp(const AppInitializer());
   }
 }
 
