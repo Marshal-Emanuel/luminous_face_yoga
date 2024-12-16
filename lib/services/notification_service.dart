@@ -226,6 +226,7 @@ class NotificationService {
           hour: hour,
           minute: minute,
           second: 0,
+          millisecond: 0,
           repeats: true,
           allowWhileIdle: true,
           preciseAlarm: true,
@@ -254,28 +255,16 @@ class NotificationService {
 
   static Future<void> scheduleEveningTip() async {
     try {
-      await AwesomeNotifications().cancel(2);
-
-      // Get today's tip index
-      final now = DateTime.now();
-      final tipIndex = now.day % eveningTips.length;
-
-      // Schedule for today's evening if it's before 8 PM, otherwise tomorrow
-      final scheduleTime = now.hour < 20 ? now : now.add(Duration(days: 1));
-
       await AwesomeNotifications().createNotification(
         content: NotificationContent(
           id: 2,
           channelKey: SCHEDULED_CHANNEL,
           title: _titleStyle.replaceAll('%s', 'Face Yoga Tip'),
-          body: _bodyStyle.replaceAll('%s', eveningTips[tipIndex]),
+          body: _bodyStyle.replaceAll('%s', eveningTips[DateTime.now().day % eveningTips.length]),
           notificationLayout: NotificationLayout.Default,
           wakeUpScreen: true,
         ),
         schedule: NotificationCalendar(
-          year: scheduleTime.year,
-          month: scheduleTime.month,
-          day: scheduleTime.day,
           hour: 20,
           minute: 0,
           second: 0,
@@ -284,7 +273,6 @@ class NotificationService {
           preciseAlarm: true,
         ),
       );
-      print('Evening tip scheduled for ${scheduleTime.toString()}');
     } catch (e) {
       print('Error scheduling evening tip: $e');
     }
@@ -402,42 +390,42 @@ class NotificationService {
     }
   }
 
-  static Future<bool> sendTestNotification() async {
-    try {
-      print('Sending test notification...');
-      final now = DateTime.now();
-      final testTime = now.add(Duration(seconds: 5));
+  // static Future<bool> sendTestNotification() async {
+  //   try {
+  //     print('Sending test notification...');
+  //     final now = DateTime.now();
+  //     final testTime = now.add(Duration(seconds: 5));
 
-      await AwesomeNotifications().createNotification(
-        content: NotificationContent(
-          id: 999,
-          channelKey: BASIC_CHANNEL,
-          title: _titleStyle.replaceAll('%s', 'Test Notification'),
-          body: _bodyStyle.replaceAll(
-              '%s', 'If you see this, notifications are working!'),
-          notificationLayout: NotificationLayout.Default,
-          wakeUpScreen: true,
-        ),
-        schedule: NotificationCalendar(
-          year: testTime.year,
-          month: testTime.month,
-          day: testTime.day,
-          hour: testTime.hour,
-          minute: testTime.minute,
-          second: testTime.second,
-          millisecond: 0,
-          repeats: false,
-          allowWhileIdle: true,
-          preciseAlarm: true,
-        ),
-      );
-      print('Test notification scheduled for: ${testTime.toString()}');
-      return true;
-    } catch (e) {
-      print('Error sending test notification: $e');
-      return false;
-    }
-  }
+  //     await AwesomeNotifications().createNotification(
+  //       content: NotificationContent(
+  //         id: 999,
+  //         channelKey: BASIC_CHANNEL,
+  //         title: _titleStyle.replaceAll('%s', 'Test Notification'),
+  //         body: _bodyStyle.replaceAll(
+  //             '%s', 'If you see this, notifications are working!'),
+  //         notificationLayout: NotificationLayout.Default,
+  //         wakeUpScreen: true,
+  //       ),
+  //       schedule: NotificationCalendar(
+  //         year: testTime.year,
+  //         month: testTime.month,
+  //         day: testTime.day,
+  //         hour: testTime.hour,
+  //         minute: testTime.minute,
+  //         second: testTime.second,
+  //         millisecond: 0,
+  //         repeats: false,
+  //         allowWhileIdle: true,
+  //         preciseAlarm: true,
+  //       ),
+  //     );
+  //     print('Test notification scheduled for: ${testTime.toString()}');
+  //     return true;
+  //   } catch (e) {
+  //     print('Error sending test notification: $e');
+  //     return false;
+  //   }
+  // }
 
   static Future<void> sendWelcomeBackNotification() async {
     try {
@@ -484,5 +472,25 @@ class NotificationService {
     } catch (e) {
       print('Error sending achievement notification: $e');
     }
+  }
+
+  static Future<void> scheduleMidnightCheck() async {
+    await AwesomeNotifications().createNotification(
+      content: NotificationContent(
+        id: 0,
+        channelKey: BASIC_CHANNEL,
+        title: _titleStyle.replaceAll('%s', 'New Day Begins!'),
+        body: _bodyStyle.replaceAll('%s', 'Time to maintain your face yoga streak. Your facial muscles await their daily workout!'),
+        notificationLayout: NotificationLayout.Default,
+      ),
+      schedule: NotificationCalendar(
+        hour: 0,
+        minute: 0,
+        second: 0,
+        repeats: true,
+        allowWhileIdle: true,
+        preciseAlarm: true,
+      ),
+    );
   }
 }
