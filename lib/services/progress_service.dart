@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:awesome_notifications/awesome_notifications.dart';
+// import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/achievement_data.dart';
 import 'notification_service.dart';
@@ -285,25 +285,25 @@ class ProgressService {
     }
   }
 
-  static Future<void> scheduleMidnightCheck() async {
-    await AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: 0,
-        channelKey: 'basic_channel',
-        title: 'Welcome Back!',
-        body: 'Check your progress and keep glowing.',
-        notificationLayout: NotificationLayout.Default,
-      ),
-      schedule: NotificationCalendar(
-        hour: 0,
-        minute: 0,
-        second: 0,
-        repeats: true,
-        allowWhileIdle: true,
-        preciseAlarm: true,
-      ),
-    );
-  }
+  // static Future<void> scheduleMidnightCheck() async {
+  //   await AwesomeNotifications().createNotification(
+  //     content: NotificationContent(
+  //       id: 0,
+  //       channelKey: 'basic_channel',
+  //       title: 'Welcome Back!',
+  //       body: 'Check your progress and keep glowing.',
+  //       notificationLayout: NotificationLayout.Default,
+  //     ),
+  //     schedule: NotificationCalendar(
+  //       hour: 0,
+  //       minute: 0,
+  //       second: 0,
+  //       repeats: true,
+  //       allowWhileIdle: true,
+  //       preciseAlarm: true,
+  //     ),
+  //   );
+  // }
 
   static Future<void> saveProgress(
       String programName, String week, String day) async {

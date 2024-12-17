@@ -112,7 +112,7 @@ class _AppInitializerState extends State<AppInitializer> {
       // Initialize other services
       await Future.wait([
         ProgressService.updateStreakOnAppLaunch(),
-        ProgressService.scheduleMidnightCheck(),
+        // ProgressService.scheduleMidnightCheck(),
       ]);
       
       // Schedule notifications

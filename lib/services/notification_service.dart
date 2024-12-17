@@ -84,10 +84,10 @@ class NotificationService {
       print('Notifications already initialized');
       return true;
     }
-    
+
     try {
       print('Starting notification initialization...');
-      
+
       // Initialize channels first
       final initialized = await AwesomeNotifications().initialize(
         null,
@@ -145,8 +145,9 @@ class NotificationService {
       }
 
       // Explicitly request permissions right after channel initialization
-      final permissionGranted = await AwesomeNotifications().requestPermissionToSendNotifications();
-      
+      final permissionGranted =
+          await AwesomeNotifications().requestPermissionToSendNotifications();
+
       if (!permissionGranted) {
         print('Notification permissions denied');
         return false;
@@ -155,15 +156,13 @@ class NotificationService {
       _initialized = true;
       print('Notification initialization completed successfully');
 
-      // Send immediate test notification to verify
-      await sendTestNotification();
-
       return true;
     } catch (e) {
       print('Error during notification initialization: $e');
       return false;
     }
-}
+  }
+
   static Future<void> initializeDefaultSettings(SharedPreferences prefs) async {
     if (!prefs.containsKey('notification_hour')) {
       await prefs.setInt('notification_hour', 9);
@@ -247,7 +246,8 @@ class NotificationService {
           id: 2,
           channelKey: SCHEDULED_CHANNEL,
           title: _titleStyle.replaceAll('%s', 'Face Yoga Tip'),
-          body: _bodyStyle.replaceAll('%s', eveningTips[DateTime.now().day % eveningTips.length]),
+          body: _bodyStyle.replaceAll(
+              '%s', eveningTips[DateTime.now().day % eveningTips.length]),
           notificationLayout: NotificationLayout.Default,
           wakeUpScreen: true,
         ),
@@ -377,43 +377,6 @@ class NotificationService {
     }
   }
 
-  static Future<bool> sendTestNotification() async {
-    try {
-      print('Sending test notification...');
-      final now = DateTime.now();
-      final testTime = now.add(Duration(seconds: 5));
-
-      await AwesomeNotifications().createNotification(
-        content: NotificationContent(
-          id: 999,
-          channelKey: BASIC_CHANNEL,
-          title: _titleStyle.replaceAll('%s', 'Test Notification'),
-          body: _bodyStyle.replaceAll(
-              '%s', 'If you see this, notifications are working!'),
-          notificationLayout: NotificationLayout.Default,
-          wakeUpScreen: true,
-        ),
-        schedule: NotificationCalendar(
-          year: testTime.year,
-          month: testTime.month,
-          day: testTime.day,
-          hour: testTime.hour,
-          minute: testTime.minute,
-          second: testTime.second,
-          millisecond: 0,
-          repeats: false,
-          allowWhileIdle: true,
-          preciseAlarm: true,
-        ),
-      );
-      print('Test notification scheduled for: ${testTime.toString()}');
-      return true;
-    } catch (e) {
-      print('Error sending test notification: $e');
-      return false;
-    }
-  }
-
   static Future<void> sendWelcomeBackNotification() async {
     try {
       final notificationId =
@@ -459,25 +422,5 @@ class NotificationService {
     } catch (e) {
       print('Error sending achievement notification: $e');
     }
-  }
-
-  static Future<void> scheduleMidnightCheck() async {
-    await AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: 0,
-        channelKey: BASIC_CHANNEL,
-        title: _titleStyle.replaceAll('%s', 'New Day Begins!'),
-        body: _bodyStyle.replaceAll('%s', 'Time to maintain your face yoga streak. Your facial muscles await their daily workout!'),
-        notificationLayout: NotificationLayout.Default,
-      ),
-      schedule: NotificationCalendar(
-        hour: 0,
-        minute: 0,
-        second: 0,
-        repeats: true,
-        allowWhileIdle: true,
-        preciseAlarm: true,
-      ),
-    );
   }
 }
